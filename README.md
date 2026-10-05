@@ -4,7 +4,7 @@ An open-source research log: teaching a small wheeled robot to **map an unknown 
 
 This repository is a lab notebook as much as it is code. Every step is recorded here, including the commands we ran, what we learned, what broke and how we fixed it. If you are new to robotics too, you should be able to follow along from the first entry.
 
-> **Status:** Phase 1, talking to hardware. Our own decoder reads raw LiDAR scans (see [Entry 1](#entry-1-2026-10-05-reading-the-lidar-with-our-own-code)).
+> **Status:** Phase 1, talking to hardware. Our own decoder reads raw LiDAR scans, and units and direction are calibrated (see [Entry 2](#entry-2-2026-10-05-calibrating-the-lidar-with-people)).
 
 ---
 
@@ -222,6 +222,40 @@ Each dot is one measurement converted from (angle, distance) to (x, y):
 
 **Next step:** do the three checks above, then Phase 2: wrap our decoder in our own ROS 2 node that publishes `sensor_msgs/LaserScan`, so we can view it in RViz.
 
+### Entry 2: 2026-10-05, calibrating the LiDAR with people
+
+**Goal:** Answer the open questions from Entry 1. Are the distances in millimetres? Which LiDAR angle is the robot's front? Do angles grow clockwise or counter-clockwise?
+
+**What we did**
+
+1. One person stood exactly in front of the robot at 1 m, and a second person sat beside them, on the robot's right.
+2. We captured a new scan (`read_scan.py 10`) and compared it with the earlier scan from Entry 1, when nobody was there.
+3. For every 1° slice of the circle we looked for points that were now **much closer** than before (more than 15 cm). Anything new in the room shows up this way. This is called **background subtraction**.
+
+![Calibration scan overlaid on the empty-room scan](docs/images/phase1_calibration.png)
+
+**Two new objects appeared**
+
+| LiDAR angle | Distance | Shape | What it is |
+|-------------|----------|-------|------------|
+| 338°–353° (centre ~345°) | 1.08–1.16 m | Rounded blob, ~30 cm wide | Standing person's legs. The LiDAR sits only ~11 cm above the floor, so it sees ankles, not bodies |
+| ~290°–315° (centre ~300°) | ~1.1–1.2 m | Straighter edge, ~45 cm | Seated person: chair legs and shins |
+
+**Conclusions**
+
+- **Units: 1 raw unit = 1 mm.** The standing person measured 1.08 m from the LiDAR's centre. They were 1 m from the front of the robot, and the LiDAR sits a few centimetres behind the front, so this fits. (Feet are not a precise target; a flat box and a tape measure would do better.)
+- **The robot's front is at about 345° in the LiDAR's own angles, not 0°.** So `angle_robot = angle_lidar + 15°` (approximately; people make a fuzzy target). Either the LiDAR is mounted slightly rotated or its 0° mark simply isn't aligned with the robot. Either way, our software has to correct for it.
+- **Angles increase counter-clockwise.** The seated person on the robot's **right** appeared at a **lower** angle (300°) than the front (345°). Counter-clockwise is also the ROS convention (REP 103: x forward, y left, angles counter-clockwise), so the data does **not** need mirroring. We had expected clockwise from YDLIDAR's documentation. Lesson: test instead of assuming.
+
+The raw data for this experiment is in [`docs/phase1_person_1m.csv`](docs/phase1_person_1m.csv).
+
+**Still open**
+
+- Measure the front offset more precisely with a flat box placed dead ahead.
+- Find which angles hit the robot's own body (the points within ~30 cm of the LiDAR) so we can mask them out.
+
+**Next step:** Phase 2, our own ROS 2 node that publishes the scan as `sensor_msgs/LaserScan`, with the +15° front correction applied.
+
 ## Glossary
 
 Terms are added as they come up in the log.
@@ -243,6 +277,8 @@ Terms are added as they come up in the log.
 | **Packet** | A small chunk of data with a fixed layout: header, fields, payload, checksum |
 | **Checksum** | A value computed from the data, sent along with it, so the receiver can detect corruption |
 | **Little-endian** | Multi-byte numbers are sent lowest byte first: `0x55AA` travels as `AA 55` |
+| **Background subtraction** | Comparing a scan with an earlier "empty" scan; whatever is closer now is something new |
+| **REP 103** | The ROS standard for units and directions: metres, radians, x forward, y left, z up, angles counter-clockwise |
 | **Occupancy grid** | A map made of small squares, each marked free, occupied or unknown |
 
 ## License
