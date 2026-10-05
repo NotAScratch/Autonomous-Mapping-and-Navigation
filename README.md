@@ -46,17 +46,20 @@ The vendor's demo code that came with the robot is used only as a reference, nev
 
 ## The robot
 
-A Yahboom ROSMASTER-style wheeled robot with an NVIDIA Jetson as its onboard computer.
+A **Yahboom ROSMASTER R2** with an **NVIDIA Jetson Orin NX Super 8 GB** as its onboard computer.
+
+The R2 uses **Ackermann steering**, like a car: the rear wheels drive and the front wheels turn. This matters a lot later on. Unlike a differential-drive robot it **cannot turn on the spot**, so it has a minimum turning radius that odometry, path planning and path following all have to respect.
 
 | Part | What it is | Role in the project |
 |------|------------|---------------------|
+| **Chassis** | Yahboom ROSMASTER R2, Ackermann steering (rear-wheel drive, front-wheel steering) | Defines how the robot can move (kinematics) |
 | **Compute** | NVIDIA Jetson Orin NX 8 GB (Super dev kit), 6 CPU cores, ~150 GB NVMe SSD | Runs everything on board: drivers, SLAM, planning |
-| **2D LiDAR** | Slamtec RPLidar (via CP210x USB-serial adapter, `/dev/rplidar`) | Main sensor for mapping: measures distance to walls 360° around the robot |
+| **2D LiDAR** | 2D LiDAR on a CP210x USB-serial adapter (`/dev/rplidar`); the Jetson config says type `4ROS` | Main sensor for mapping: measures distance to walls 360° around the robot |
 | **Depth camera** | Orbbec 3D camera (RGB + depth) | Later: 3D / visual SLAM and obstacle detection |
 | **Motor driver board** | Yahboom ROS expansion board (CH340 USB-serial, `/dev/myserial`) | Drives the wheel motors, reports wheel encoders and IMU |
 | **Extras** | USB webcam, LED matrix, Bluetooth | Not used for now |
 
-*Exact LiDAR model and drive type (mecanum / differential / Ackermann) still to be confirmed, see the log.*
+*Exact LiDAR model still to be confirmed in Phase 1 by reading its device info.*
 
 ## Software environment
 
@@ -143,6 +146,7 @@ Terms are added as they come up in the log.
 | **SSH** | Secure Shell: logging into another computer's terminal over the network |
 | **DHCP** | How a router hands out IP addresses automatically; the address may change between boots |
 | **udev rule** | A Linux rule that gives a USB device a stable name such as `/dev/rplidar` |
+| **Ackermann steering** | Car-like steering: front wheels turn, the robot drives along arcs and cannot rotate in place |
 | **Odometry** | Estimating how far the robot has moved, e.g. by counting wheel rotations |
 | **Occupancy grid** | A map made of small squares, each marked free, occupied or unknown |
 
