@@ -4,7 +4,7 @@ An open-source research log: teaching a small wheeled robot to **map an unknown 
 
 This repository is a lab notebook as much as it is code. Every step is recorded here, including the commands we ran, what we learned, what broke and how we fixed it. If you are new to robotics too, you should be able to follow along from the first entry.
 
-> **Status:** Phase 0, setup and hardware inventory. No robot code written yet.
+> **Status:** Phase 1, talking to hardware. Our own decoder reads raw LiDAR scans (see [Entry 1](#entry-1-2026-10-05-reading-the-lidar-with-our-own-code)).
 
 ---
 
@@ -54,12 +54,19 @@ The R2 uses **Ackermann steering**, like a car: the rear wheels drive and the fr
 |------|------------|---------------------|
 | **Chassis** | Yahboom ROSMASTER R2, Ackermann steering (rear-wheel drive, front-wheel steering) | Defines how the robot can move (kinematics) |
 | **Compute** | NVIDIA Jetson Orin NX 8 GB (Super dev kit), 6 CPU cores, ~150 GB NVMe SSD | Runs everything on board: drivers, SLAM, planning |
-| **2D LiDAR** | 2D LiDAR on a CP210x USB-serial adapter (`/dev/rplidar`); the Jetson config says type `4ROS` | Main sensor for mapping: measures distance to walls 360° around the robot |
+| **2D LiDAR** | YDLIDAR 4ROS, a time-of-flight LiDAR (reports model code 101, firmware 2.1), on a CP2102 USB-serial adapter (`/dev/rplidar`), 512000 baud, ~8 Hz, ~2,500 points per turn | Main sensor for mapping: measures distance to walls 360° around the robot |
 | **Depth camera** | Orbbec 3D camera (RGB + depth) | Later: 3D / visual SLAM and obstacle detection |
 | **Motor driver board** | Yahboom ROS expansion board (CH340 USB-serial, `/dev/myserial`) | Drives the wheel motors, reports wheel encoders and IMU |
 | **Extras** | USB webcam, LED matrix, Bluetooth | Not used for now |
 
-*Exact LiDAR model still to be confirmed in Phase 1 by reading its device info.*
+
+## Repository layout
+
+| Path | What's inside |
+|------|---------------|
+| `phase1_lidar/` | Phase 1: talking to the LiDAR directly over serial, no driver, no ROS |
+| `docs/images/` | Plots and pictures referenced from this README |
+| `docs/` | Raw data captured during experiments |
 
 ## Software environment
 
@@ -132,6 +139,89 @@ Newest entries at the bottom. Every entry records **goal → what we did → wha
 
 **Next step:** Get the motor board connected, then start Phase 1: read raw LiDAR data with our own Python script.
 
+### Entry 1: 2026-10-05, reading the LiDAR with our own code
+
+**Goal:** Get distance measurements out of the LiDAR using only Python and a serial port. No vendor driver, no ROS. If we can decode the raw bytes ourselves, we really understand what the sensor gives us.
+
+**Step 1: which LiDAR is it?**
+
+The Jetson's config said `RPLIDAR_TYPE=4ROS`, which suggests an RPLidar, but reading the vendor's launch file (`laser_bringup_launch.py`) showed that type `4ROS` actually uses `ydlidar_ros2_driver`. So it is a **YDLIDAR 4ROS**, not a Slamtec RPLidar. The vendor config also gave us the serial speed: **512000 baud**.
+
+*Lesson:* don't trust names (`/dev/rplidar`, `RPLIDAR_TYPE`). Trace them back to what the code actually does.
+
+**Step 2: say hello (`phase1_lidar/ydlidar_probe.py`)**
+
+The YDLIDAR protocol is simple:
+- A **command** is 2 bytes: `0xA5` followed by a command code.
+- A **reply** starts with `A5 5A`, then 4 bytes of length/mode, then 1 byte of type, then the payload.
+
+We sent `A5 90` (get device info) and `A5 92` (get health):
+
+```
+$ python3 ydlidar_probe.py
+DEVICE INFO (type=0x04, 20 bytes): 65 01 02 01 02 00 02 04 00 09 01 08 00 00 01 00 00 00 09 08
+  model code : 101
+  firmware   : 2.1
+  hardware   : 1
+  serial     : 2024091800100098
+HEALTH (type=0x06): 00 00 00
+  status     : 0 (OK)
+```
+
+Model code 101 belongs to YDLIDAR's TG time-of-flight family in their SDK; the 4ROS appears to be built on that core. The serial number starts with a date: made on 2024-09-18.
+
+**Step 3: stream and decode scans (`phase1_lidar/read_scan.py`)**
+
+`A5 60` starts scanning. From then on the LiDAR streams **packets** forever, each one covering a small slice of the circle:
+
+| Bytes | Field | Meaning |
+|-------|-------|---------|
+| 2 | `PH` | Packet header, always `AA 55`; how we find where a packet starts |
+| 1 | `CT` | Bit 0 = 1 marks the start of a new revolution |
+| 1 | `LSN` | Number of samples in this packet |
+| 2 | `FSA` | Angle of the first sample: `(FSA >> 1) / 64` degrees |
+| 2 | `LSA` | Angle of the last sample, same formula |
+| 2 | `CS` | Checksum: XOR of every 16-bit word in the packet |
+| 2 × LSN | samples | One distance per sample, little-endian uint16 |
+
+The angles of the samples in between are spread evenly from `FSA` to `LSA`. Distance `0` means "no return" (nothing in range, or a surface that didn't reflect).
+
+**A bug, and what it taught us:** the first version crashed with a timeout right after the LiDAR acknowledged the start command. Capturing the raw bytes showed that after the `A5 5A` reply the LiDAR goes **silent for about 1.1 seconds** while its motor spins up to speed, and only then starts sending data. The script waited only 1 second. Fix: allow up to 5 seconds for the first byte.
+
+**Result**
+
+```
+$ python3 read_scan.py 20
+motor spin-up        : 1.10 s of silence before data
+revolutions          : 20
+scan rate            : 8.09 Hz
+points / revolution  : min 2185, max 2698
+angular resolution   : 0.147 deg
+bad packets dropped  : 0
+valid points (d>0)   : 2252 / 2698
+raw distance min/max : 59 / 9643
+```
+
+![One raw LiDAR revolution decoded by our own script](docs/images/phase1_first_scan.png)
+
+Each dot is one measurement converted from (angle, distance) to (x, y):
+`x = d·cos(θ)`, `y = d·sin(θ)`. The long straight lines are walls; the cluster close to the red triangle is probably the robot's own body and mast getting in the way. The raw data for this picture is in [`docs/phase1_first_scan.csv`](docs/phase1_first_scan.csv).
+
+**What we learned**
+
+- **Zero corrupt packets** out of hundreds: every checksum matched, so our understanding of the packet layout is correct.
+- ~8 revolutions per second × ~2,500 points ≈ **20,000 measurements per second**.
+- About 16 % of the points are `0` (no return). Real sensors always have holes, so later code must ignore them.
+- The walls come out as **straight lines**, a good sign that the angle decoding is right.
+
+**Still to verify (needs someone next to the robot)**
+
+1. **Units:** we assumed 1 raw unit = 1 mm. The walls look the right size, but this needs a tape measure: put a box at a measured distance and compare.
+2. **Which way is 0°, and which way do angles increase?** YDLIDAR angles grow **clockwise**, while ROS uses **counter-clockwise** angles, so our picture may be mirrored. Test: put an object on the robot's left and check where it shows up.
+3. **Self-hits:** find out exactly which angles hit the robot's own body, so we can mask them out.
+
+**Next step:** do the three checks above, then Phase 2: wrap our decoder in our own ROS 2 node that publishes `sensor_msgs/LaserScan`, so we can view it in RViz.
+
 ## Glossary
 
 Terms are added as they come up in the log.
@@ -148,6 +238,11 @@ Terms are added as they come up in the log.
 | **udev rule** | A Linux rule that gives a USB device a stable name such as `/dev/rplidar` |
 | **Ackermann steering** | Car-like steering: front wheels turn, the robot drives along arcs and cannot rotate in place |
 | **Odometry** | Estimating how far the robot has moved, e.g. by counting wheel rotations |
+| **Time of flight (TOF)** | Measuring distance by timing how long a light pulse takes to bounce back |
+| **Baud rate** | Speed of a serial connection in bits per second (here 512000) |
+| **Packet** | A small chunk of data with a fixed layout: header, fields, payload, checksum |
+| **Checksum** | A value computed from the data, sent along with it, so the receiver can detect corruption |
+| **Little-endian** | Multi-byte numbers are sent lowest byte first: `0x55AA` travels as `AA 55` |
 | **Occupancy grid** | A map made of small squares, each marked free, occupied or unknown |
 
 ## License
