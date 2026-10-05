@@ -228,7 +228,7 @@ Each dot is one measurement converted from (angle, distance) to (x, y):
 
 **What we did**
 
-1. One person stood exactly in front of the robot at 1 m, and a second person sat beside them, on the robot's right.
+1. One person stood exactly in front of the robot at 1 m. A second person sat beside them, and a control-panel box sat on a table to the standing person's left.
 2. We captured a new scan (`read_scan.py 10`) and compared it with the earlier scan from Entry 1, when nobody was there.
 3. For every 1° slice of the circle we looked for points that were now **much closer** than before (more than 15 cm). Anything new in the room shows up this way. This is called **background subtraction**.
 
@@ -238,23 +238,38 @@ Each dot is one measurement converted from (angle, distance) to (x, y):
 
 | LiDAR angle | Distance | Shape | What it is |
 |-------------|----------|-------|------------|
-| 338°–353° (centre ~345°) | 1.08–1.16 m | Rounded blob, ~30 cm wide | Standing person's legs. The LiDAR sits only ~11 cm above the floor, so it sees ankles, not bodies |
-| ~290°–315° (centre ~300°) | ~1.1–1.2 m | Straighter edge, ~45 cm | Seated person: chair legs and shins |
+| 291°–314° (centre **~303°**) | 1.09–1.24 m (median 1.12 m) | Edge ~45 cm wide | **The standing person's legs and feet.** The LiDAR sits only ~11 cm above the floor, so it sees ankles, not bodies |
+| 338°–353° (centre ~346°) | 1.08–1.26 m | Rounded blob ~30 cm wide | A control-panel box on a table, on the person's left, which is the **robot's right** |
+
+The seated person did not show up as a separate object.
+
+> **A mistake worth recording.** The first time through, we guessed the labels the other way round: the rounded blob was "obviously" legs, so it had to be the person. That gave a front of 345° and "counter-clockwise" angles, both wrong. The person in the room corrected it. Lesson: **a scan is just dots. Never label objects by guessing what their shape "looks like"; check against what is actually in the room.** A cleaner experiment uses a single object and one change at a time.
 
 **Conclusions**
 
-- **Units: 1 raw unit = 1 mm.** The standing person measured 1.08 m from the LiDAR's centre. They were 1 m from the front of the robot, and the LiDAR sits a few centimetres behind the front, so this fits. (Feet are not a precise target; a flat box and a tape measure would do better.)
-- **The robot's front is at about 345° in the LiDAR's own angles, not 0°.** So `angle_robot = angle_lidar + 15°` (approximately; people make a fuzzy target). Either the LiDAR is mounted slightly rotated or its 0° mark simply isn't aligned with the robot. Either way, our software has to correct for it.
-- **Angles increase counter-clockwise.** The seated person on the robot's **right** appeared at a **lower** angle (300°) than the front (345°). Counter-clockwise is also the ROS convention (REP 103: x forward, y left, angles counter-clockwise), so the data does **not** need mirroring. We had expected clockwise from YDLIDAR's documentation. Lesson: test instead of assuming.
+- **Units: 1 raw unit = 1 mm.** The person was 1 m from the front of the robot; the nearest leg points measured 1.09 m from the LiDAR's centre, which sits a little behind the front. (Feet are a fuzzy target; a flat box and a tape measure would be more precise.)
+- **The robot's front is at about 303° in the LiDAR's own angles, not 0°.** The LiDAR's zero mark is about 57° away from straight ahead.
+- **Angles increase clockwise** (seen from above). The box on the robot's **right** appeared at a **higher** angle (346°) than the front (303°). This matches YDLIDAR's documentation, but it is the **opposite** of ROS, where angles increase counter-clockwise (REP 103: x forward, y left). So the scan must be **mirrored** when converting to ROS.
+
+Putting both corrections together, the angle as ROS expects it (0 = straight ahead, positive = to the left) is:
+
+```
+angle_robot = 303° - angle_lidar
+```
+
+Check with the box: 303° − 346° = −43°, a negative angle, which is the robot's right. ✓
+
+*Note:* the plot above draws raw angles counter-clockwise like a normal maths graph, so in it the room appears mirrored.
 
 The raw data for this experiment is in [`docs/phase1_person_1m.csv`](docs/phase1_person_1m.csv).
 
 **Still open**
 
-- Measure the front offset more precisely with a flat box placed dead ahead.
+- Measure the front offset more precisely with a single flat box placed dead ahead.
+- Re-confirm the clockwise direction with one object at a time (this time we'll see it live in RViz).
 - Find which angles hit the robot's own body (the points within ~30 cm of the LiDAR) so we can mask them out.
 
-**Next step:** Phase 2, our own ROS 2 node that publishes the scan as `sensor_msgs/LaserScan`, with the +15° front correction applied.
+**Next step:** Phase 2, our own ROS 2 node that publishes the scan as `sensor_msgs/LaserScan` using `angle_robot = 303° − angle_lidar`. In RViz we can then double-check the direction live by walking to the robot's left and right.
 
 ## Glossary
 
