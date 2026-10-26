@@ -267,7 +267,30 @@ The raw data for this experiment is in [`docs/phase1_person_1m.csv`](docs/phase1
 
 - Measure the front offset more precisely with a single flat box placed dead ahead.
 - Re-confirm the clockwise direction with one object at a time (this time we'll see it live in RViz).
-- Find which angles hit the robot's own body (the points within ~30 cm of the LiDAR) so we can mask them out.
+- ~~Find which angles hit the robot's own body~~: done in Entry 3.
+
+### Entry 3: 2026-10-26, masking self-hits and a box test for the front offset
+
+**Self-hit mask (done from data we already had).** The robot's own chassis is always the same distance from the LiDAR, in any room. So a 1° slice whose closest point is under 30 cm in *every* scan must be the robot itself. [`phase1_lidar/self_mask.py`](phase1_lidar/self_mask.py) checks this across both earlier scans and writes [`phase1_lidar/self_mask.json`](phase1_lidar/self_mask.json):
+
+| LiDAR angles | Robot angles (`303° − angle`) | Distance | What it is |
+|--------------|-------------------------------|----------|------------|
+| 4°–178° (174° wide) | −61° round the back to +125° | 6–30 cm | The robot's body behind the LiDAR, so the LiDAR must sit near the front |
+| 269°–274° | +29° to +34° (front-left) | ~10 cm | Something thin and close, probably a mount post |
+
+A few slices inside the body returned **no reading at all** (distance 0), probably dark parts of the chassis that absorb the laser. The script bridges gaps of up to 5° so these don't split the mask.
+
+This means **only about half the circle sees the room**. Mapping will rely on the front ~186°.
+
+**Box offset check (script ready, needs a capture on the robot).** [`phase1_lidar/box_offset.py`](phase1_lidar/box_offset.py):
+
+1. Clear the space in front of the robot: `python3 read_scan.py 10 && mv scan.csv empty.csv`
+2. Put a flat box dead ahead with its face square to the robot, and tape-measure bumper to face: `python3 read_scan.py 10 && mv scan.csv box.csv`
+3. `python3 box_offset.py empty.csv box.csv 1.00` (the last number is the tape distance in metres)
+
+The script finds the box by background subtraction, then estimates "straight ahead" two ways: (a) the middle of the box's angular extent and (b) the perpendicular of a straight line fitted to the box face. If they agree within 2°, the setup was good and the result replaces the ~303° estimate. It also reports how far the LiDAR sits behind the bumper. A synthetic box placed at 300° came back as 300.0°.
+
+**Still open:** run the box capture; physically confirm the mask (what is at +30°?).
 
 **Next step:** Phase 2, our own ROS 2 node that publishes the scan as `sensor_msgs/LaserScan` using `angle_robot = 303° − angle_lidar`. In RViz we can then double-check the direction live by walking to the robot's left and right.
 
