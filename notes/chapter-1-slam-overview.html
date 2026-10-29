@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>SLAM Study Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Patrick+Hand&display=swap">
+<style>
+/* Layout: a stack of ruled notebook sheets, one topic per sheet, text sitting on a 32px rule grid, hand-drawn diagrams inline. */
+:root {
+  --desk:    #e6ebf2;
+  --paper:   #fdfeff;
+  --rule:    #cddff2;
+  --margin:  #f1a9a6;
+  --ink:     #1f3c8f;   /* blue ballpoint */
+  --red:     #c7352d;   /* red pen for warnings and corrections */
+  --green:   #2c7a4d;   /* green pen for "good" */
+  --pencil:  #6c7690;
+  --hl:      rgba(255, 236, 64, .55);
+  --sticky:  #fff3a3;
+  --sticky-ink: #3b3413;
+  --shadow:  rgba(30, 50, 90, .14);
+  --hand:  "Caveat", "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  --body:  "Patrick Hand", "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  --mono:  ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --line: 32px;
+  --mx: 64px;           /* where the red margin line sits */
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --desk: #12151c; --paper: #1d2330; --rule: #2b3549; --margin: #6e3a3e;
+    --ink: #d9e3f7; --red: #ff8b7e; --green: #86d6a1; --pencil: #8e98ae;
+    --hl: rgba(255, 220, 60, .26); --sticky: #4d4521; --sticky-ink: #f6edc2;
+    --shadow: rgba(0,0,0,.45); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --desk: #12151c; --paper: #1d2330; --rule: #2b3549; --margin: #6e3a3e;
+  --ink: #d9e3f7; --red: #ff8b7e; --green: #86d6a1; --pencil: #8e98ae;
+  --hl: rgba(255, 220, 60, .26); --sticky: #4d4521; --sticky-ink: #f6edc2;
+  --shadow: rgba(0,0,0,.45); color-scheme: dark;
+}
+
+body {
+  background: var(--desk);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 21px;
+  line-height: var(--line);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 64px;
+}
+.stack { max-width: 820px; margin: 0 auto; display: grid; gap: 40px; }
+
+.page {
+  position: relative;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(to right, transparent calc(var(--mx) - 1px), var(--margin) calc(var(--mx) - 1px), var(--margin) calc(var(--mx) + 1px), transparent calc(var(--mx) + 1px)),
+    repeating-linear-gradient(to bottom, transparent 0 calc(var(--line) - 1px), var(--rule) calc(var(--line) - 1px) var(--line));
+  background-position: 0 0, 0 calc(var(--line) * 2);
+  box-shadow: 0 1px 2px var(--shadow), 0 10px 28px var(--shadow);
+  padding: calc(var(--line) * 2) 32px calc(var(--line) * 2) calc(var(--mx) + 20px);
+  min-width: 0;
+}
+.page:nth-child(odd)  { transform: rotate(-.25deg); }
+.page:nth-child(even) { transform: rotate(.2deg); }
+.page > * + * { margin-top: var(--line); }
+
+.pg {
+  position: absolute; top: 18px; right: 28px;
+  font-family: var(--hand); font-size: 22px; color: var(--pencil);
+}
+.date { position: absolute; top: 18px; left: calc(var(--mx) + 20px); font-family: var(--hand); font-size: 22px; color: var(--pencil); }
+
+h1, h2, h3 { font-family: var(--hand); font-weight: 700; margin: 0; text-wrap: balance; }
+h1 { font-size: 88px; line-height: calc(var(--line) * 3); letter-spacing: 2px; }
+h2 { font-size: 48px; line-height: calc(var(--line) * 2); }
+h3 { font-size: 32px; line-height: var(--line); color: var(--red); }
+h1 .sub { display: block; font-size: 34px; line-height: var(--line); letter-spacing: 0; color: var(--pencil); font-weight: 500; }
+h2 .u, h1 .u { background-image: linear-gradient(var(--red), var(--red)); background-size: 100% 3px; background-repeat: no-repeat; background-position: 0 88%; }
+
+p, ul, ol { margin: 0; }
+ul, ol { padding-left: 28px; }
+li + li { margin-top: 0; }
+ul.dash { list-style: none; padding-left: 28px; }
+ul.dash > li { position: relative; }
+ul.dash > li::before { content: "–"; position: absolute; left: -24px; color: var(--pencil); }
+ul.arrow { list-style: none; padding-left: 32px; }
+ul.arrow > li { position: relative; }
+ul.arrow > li::before { content: "→"; position: absolute; left: -30px; color: var(--red); }
+
+mark { background: linear-gradient(100deg, transparent 2%, var(--hl) 6%, var(--hl) 94%, transparent 98%); color: inherit; padding: 0 3px; }
+.red { color: var(--red); }
+.green { color: var(--green); }
+.pencil { color: var(--pencil); }
+.big { font-family: var(--hand); font-size: 30px; }
+b { font-weight: normal; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+s { text-decoration-color: var(--red); text-decoration-thickness: 2px; }
+
+.eq {
+  font-family: var(--hand); font-size: 32px; line-height: calc(var(--line) * 1.5);
+  padding: 8px 16px; border: 2px solid var(--ink); border-radius: 14px 6px 16px 8px / 8px 16px 6px 14px;
+  display: inline-block; max-width: 100%; overflow-x: auto;
+}
+.eq sub, .eq sup { font-size: 20px; line-height: 0; }
+.eq-wrap { overflow-x: auto; }
+
+.sticky {
+  background: var(--sticky); color: var(--sticky-ink);
+  padding: 20px 24px; max-width: 460px;
+  transform: rotate(-1.4deg);
+  box-shadow: 2px 6px 14px var(--shadow);
+  font-size: 21px;
+}
+.sticky.right { margin-left: auto; transform: rotate(1.2deg); }
+.sticky strong { font-family: var(--hand); font-size: 28px; display: block; font-weight: 700; }
+
+figure { margin: 0; overflow-x: auto; }
+figure svg { display: block; width: 100%; height: auto; min-width: 520px; }
+figcaption { font-family: var(--hand); font-size: 22px; color: var(--pencil); text-align: center; }
+
+/* diagram strokes and text */
+.ln   { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.ln.r { stroke: var(--red); }
+.ln.g { stroke: var(--green); }
+.ln.p { stroke: var(--pencil); stroke-width: 2; }
+.ln.dash { stroke-dasharray: 7 7; }
+.ln.thin { stroke-width: 1.6; }
+.dot  { fill: var(--ink); stroke: none; }
+.dot.r { fill: var(--red); }
+.fillpaper { fill: var(--paper); stroke: var(--ink); stroke-width: 2.4; }
+.fillhl { fill: var(--hl); stroke: none; }
+.t    { font-family: var(--hand); font-size: 24px; fill: var(--ink); }
+.t.s  { font-size: 20px; }
+.t.r  { fill: var(--red); }
+.t.g  { fill: var(--green); }
+.t.p  { fill: var(--pencil); }
+.t.b  { font-weight: 700; }
+.ah   { fill: var(--ink); }
+.ah.r { fill: var(--red); }
+.ah.g { fill: var(--green); }
+.wob  { filter: url(#wobble); }
+
+/* comparison grid of the three SLAM families */
+.fam { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.fam > div { min-width: 0; }
+.fam h4 { font-family: var(--hand); font-size: 30px; line-height: var(--line); margin: 0 0 0; color: var(--ink); }
+.fam .tag { font-family: var(--hand); font-size: 20px; color: var(--pencil); }
+.fam p { font-size: 19px; }
+
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; }
+.cols > div { min-width: 0; }
+
+.tape {
+  position: relative; font-family: var(--mono); font-size: 15px; line-height: 24px;
+  background: var(--paper); border: 1px solid var(--rule); padding: 16px 18px;
+  box-shadow: 0 2px 6px var(--shadow); overflow-x: auto; white-space: pre; color: var(--ink);
+}
+.tape::before, .tape::after {
+  content: ""; position: absolute; top: -10px; width: 70px; height: 20px;
+  background: var(--hl); opacity: .9;
+}
+.tape::before { left: 18px; transform: rotate(-4deg); }
+.tape::after  { right: 18px; transform: rotate(3deg); }
+.tape .c { color: var(--pencil); }
+
+.check { list-style: none; padding-left: 36px; }
+.check li { position: relative; }
+.check li::before { content: "☐"; position: absolute; left: -34px; color: var(--green); font-size: 24px; }
+
+@media (max-width: 640px) {
+  :root { --mx: 30px; }
+  body { font-size: 19px; }
+  .page { padding: calc(var(--line) * 2) 18px calc(var(--line) * 2) calc(var(--mx) + 14px); }
+  .date { left: calc(var(--mx) + 14px); }
+  h1 { font-size: 64px; line-height: calc(var(--line) * 2); }
+  h1 .sub { font-size: 26px; }
+  h2 { font-size: 40px; }
+  .eq { font-size: 26px; }
+  .fam, .cols { grid-template-columns: minmax(0, 1fr); }
+  .page:nth-child(odd), .page:nth-child(even) { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<!-- shared defs: hand-drawn wobble filter and arrowheads -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="wobble" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="2" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5"/>
+    </filter>
+    <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path class="ah" d="M0 0 L10 5 L0 10 L3 5 Z"/>
+    </marker>
+    <marker id="ahr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path class="ah r" d="M0 0 L10 5 L0 10 L3 5 Z"/>
+    </marker>
+    <marker id="ahg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path class="ah g" d="M0 0 L10 5 L0 10 L3 5 Z"/>
+    </marker>
+  </defs>
+</svg>
+
+<main class="stack">
+
+<!-- ───────── PAGE 1 ───────── -->
+<section class="page">
+  <span class="date">27 / 10 / 2026</span>
+  <span class="pg">p. 1</span>
+
+  <h1><span class="u">SLAM</span><span class="sub">Simultaneous Localization And Mapping</span></h1>
+
+  <p>A robot is dropped into a place it has never seen. It has to build a <b>map</b> of the place and, at the same time, figure out <b>where it is</b> on that map. Nobody gives it either one.</p>
+
+  <h3>the chicken-and-egg problem</h3>
+
+  <figure>
+    <svg viewBox="0 0 680 240" role="img" aria-label="Localization needs a map, and mapping needs to know the robot's position, so each depends on the other.">
+      <g class="wob">
+        <ellipse class="fillpaper" cx="150" cy="120" rx="128" ry="74"/>
+        <ellipse class="fillpaper" cx="530" cy="120" rx="128" ry="74"/>
+        <path class="ln" d="M282 92 C 340 48, 390 48, 398 90" marker-end="url(#ah)"/>
+        <path class="ln" d="M398 152 C 340 196, 290 196, 282 152" marker-end="url(#ah)"/>
+      </g>
+      <text class="t b" x="150" y="106" text-anchor="middle">LOCALIZATION</text>
+      <text class="t s" x="150" y="136" text-anchor="middle">"where am I?"</text>
+      <text class="t b" x="530" y="106" text-anchor="middle">MAPPING</text>
+      <text class="t s" x="530" y="136" text-anchor="middle">"what's around me?"</text>
+      <text class="t s r" x="340" y="38" text-anchor="middle">needs a map</text>
+      <text class="t s r" x="340" y="222" text-anchor="middle">needs my position</text>
+    </svg>
+    <figcaption>can't do one without the other ⇒ solve both <u>together</u></figcaption>
+  </figure>
+
+  <h3>what's being estimated</h3>
+  <div class="eq-wrap"><span class="eq">p( x<sub>1:t</sub> , m &nbsp;|&nbsp; z<sub>1:t</sub> , u<sub>1:t</sub> )</span></div>
+  <ul class="dash">
+    <li><span class="red">x</span> = robot pose (x, y, θ in 2D) at each time step</li>
+    <li><span class="red">m</span> = the map</li>
+    <li><span class="red">z</span> = sensor readings (laser scans, camera images)</li>
+    <li><span class="red">u</span> = controls / odometry (what the wheels or IMU say we did)</li>
+  </ul>
+  <p>Read it as: <mark>"given everything I've seen and every move I've made, what's the most likely path and map?"</mark> It's a <b>probability</b>, because every sensor is noisy.</p>
+
+  <div class="sticky">
+    <strong>Key idea</strong>
+    Estimate pose and map together, and always keep track of <u>how unsure</u> you are about each.
+  </div>
+</section>
+
+<!-- ───────── PAGE 2 ───────── -->
+<section class="page">
+  <span class="pg">p. 2</span>
+  <h2><span class="u">The SLAM loop</span></h2>
+  <p>Every SLAM system repeats the same cycle many times a second:</p>
+
+  <figure>
+    <svg viewBox="0 0 680 400" role="img" aria-label="Cycle: move, predict pose, sense, match to map, correct pose and update map, then repeat.">
+      <g class="wob">
+        <rect class="fillpaper" x="230" y="18"  width="220" height="64" rx="10"/>
+        <rect class="fillpaper" x="470" y="128" width="196" height="64" rx="10"/>
+        <rect class="fillpaper" x="400" y="300" width="230" height="64" rx="10"/>
+        <rect class="fillpaper" x="50"  y="300" width="230" height="64" rx="10"/>
+        <rect class="fillpaper" x="8"   y="128" width="216" height="64" rx="10"/>
+        <path class="ln" d="M452 56 C 520 66, 560 90, 566 124" marker-end="url(#ah)"/>
+        <path class="ln" d="M566 196 C 566 240, 548 270, 528 296" marker-end="url(#ah)"/>
+        <path class="ln" d="M396 332 L 286 332" marker-end="url(#ah)"/>
+        <path class="ln" d="M150 296 C 130 260, 118 230, 116 198" marker-end="url(#ah)"/>
+        <path class="ln" d="M116 124 C 120 86, 170 62, 226 54" marker-end="url(#ah)"/>
+      </g>
+      <text class="t b" x="340" y="46" text-anchor="middle">1. MOVE</text>
+      <text class="t s" x="340" y="72" text-anchor="middle">read odometry u<tspan baseline-shift="sub" font-size="14">t</tspan></text>
+      <text class="t b" x="568" y="156" text-anchor="middle">2. PREDICT</text>
+      <text class="t s" x="568" y="182" text-anchor="middle">guess new pose</text>
+      <text class="t b" x="515" y="328" text-anchor="middle">3. SENSE</text>
+      <text class="t s" x="515" y="354" text-anchor="middle">take scan z<tspan baseline-shift="sub" font-size="14">t</tspan></text>
+      <text class="t b" x="165" y="328" text-anchor="middle">4. MATCH</text>
+      <text class="t s" x="165" y="354" text-anchor="middle">scan ↔ map so far</text>
+      <text class="t b" x="116" y="156" text-anchor="middle">5. CORRECT</text>
+      <text class="t s" x="116" y="182" text-anchor="middle">fix pose, add to map</text>
+      <text class="t r" x="340" y="210" text-anchor="middle">uncertainty</text>
+      <text class="t s r" x="340" y="238" text-anchor="middle">grows at 2, shrinks at 5</text>
+    </svg>
+  </figure>
+
+  <ol>
+    <li><b>Move</b>: wheel encoders / IMU tell us roughly how far we went and how much we turned.</li>
+    <li><b>Predict</b>: apply the <span class="red">motion model</span>. The new pose is a guess, and it's <span class="red">fuzzier</span> than the last one.</li>
+    <li><b>Sense</b>: LiDAR scan or camera frame.</li>
+    <li><b>Match</b>: "this wall in my scan is <u>that</u> wall in my map." This is called <mark>data association</mark>, and it's where most bugs come from.</li>
+    <li><b>Correct</b>: shift the pose so the scan lines up, then add the new readings to the map. Uncertainty <span class="green">shrinks</span>.</li>
+  </ol>
+
+  <h3>the maths behind it (Bayes filter)</h3>
+  <div class="eq-wrap"><span class="eq">bel(x<sub>t</sub>) = η · <span class="green">p(z<sub>t</sub> | x<sub>t</sub>)</span> · ∫ <span class="red">p(x<sub>t</sub> | x<sub>t−1</sub>, u<sub>t</sub>)</span> bel(x<sub>t−1</sub>) dx<sub>t−1</sub></span></div>
+  <ul class="arrow">
+    <li><span class="red">red part</span> = motion model → <b>predict</b></li>
+    <li><span class="green">green part</span> = sensor model → <b>correct</b></li>
+    <li>η just normalises so it all sums to 1</li>
+  </ul>
+</section>
+
+<!-- ───────── PAGE 3 ───────── -->
+<section class="page">
+  <span class="pg">p. 3</span>
+  <h2><span class="u">Drift</span> &amp; loop closure</h2>
+
+  <p>Odometry is never perfect: wheels slip, the floor is uneven, the IMU has bias. Tiny errors <mark>add up</mark> with every step, so the estimated path slowly peels away from the real one. That's <b>drift</b>.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 330" role="img" aria-label="Left: the estimated path drifts away from the true square path, with uncertainty ellipses growing. Right: after loop closure the path snaps back onto the true one.">
+      <!-- left: before -->
+      <text class="t b" x="175" y="26" text-anchor="middle">before</text>
+      <path class="ln p dash" d="M50 270 L50 70 L290 70 L290 270 Z"/>
+      <g class="wob">
+        <path class="ln" d="M50 270 C 50 200, 52 120, 58 66 C 140 56, 230 46, 306 48 C 318 120, 324 200, 326 254 C 250 268, 170 280, 104 292"/>
+        <ellipse class="ln thin" cx="54" cy="170" rx="5" ry="8"/>
+        <ellipse class="ln thin" cx="180" cy="52" rx="11" ry="8"/>
+        <ellipse class="ln thin" cx="318" cy="150" rx="15" ry="19"/>
+        <ellipse class="ln thin" cx="220" cy="272" rx="22" ry="16"/>
+        <ellipse class="ln r" cx="104" cy="292" rx="28" ry="20"/>
+        <path class="ln r thin" d="M100 286 L 56 274" marker-end="url(#ahr)"/>
+      </g>
+      <circle class="dot" cx="50" cy="270" r="5"/>
+      <text class="t s" x="24" y="300">start</text>
+      <text class="t s r" x="120" y="322">gap = drift!</text>
+      <text class="t s p" x="170" y="104" text-anchor="middle">- - true path</text>
+      <text class="t s p" x="170" y="128" text-anchor="middle">ellipses = how unsure</text>
+
+      <!-- arrow between -->
+      <path class="ln r" d="M352 170 L 392 170" marker-end="url(#ahr)"/>
+
+      <!-- right: after -->
+      <text class="t b" x="545" y="26" text-anchor="middle">after loop closure</text>
+      <path class="ln p dash" d="M420 270 L420 70 L660 70 L660 270 Z"/>
+      <g class="wob">
+        <path class="ln g" d="M420 270 C 420 200, 421 130, 423 70 C 500 66, 580 64, 662 68 C 663 140, 663 210, 662 268 C 590 270, 500 270, 424 270"/>
+        <ellipse class="ln thin g" cx="421" cy="170" rx="4" ry="6"/>
+        <ellipse class="ln thin g" cx="540" cy="66" rx="6" ry="4"/>
+        <ellipse class="ln thin g" cx="662" cy="170" rx="5" ry="6"/>
+        <ellipse class="ln thin g" cx="540" cy="270" rx="6" ry="4"/>
+        <path class="ln r" d="M440 292 C 470 318, 400 320, 414 282" marker-end="url(#ahr)"/>
+      </g>
+      <circle class="dot" cx="420" cy="270" r="5"/>
+      <text class="t s r" x="470" y="318">"I've been here before!"</text>
+    </svg>
+  </figure>
+
+  <h3>loop closure</h3>
+  <p>When the robot comes back to a place it has already mapped and <b>recognises</b> it, that gives one strong constraint: "pose now ≈ pose back then." The optimiser spreads the correction back along the <u>whole</u> path, and the map snaps into shape.</p>
+  <ul class="dash">
+    <li>LiDAR: match the current scan against old submaps</li>
+    <li>Camera: "bag of words" image matching (place recognition)</li>
+  </ul>
+
+  <div class="sticky right">
+    <strong class="red" style="color:inherit">⚠ careful</strong>
+    A <u>false</u> loop closure (two similar-looking corridors) bends the whole map wrong. Good systems double-check before accepting one.
+  </div>
+</section>
+
+<!-- ───────── PAGE 4 ───────── -->
+<section class="page">
+  <span class="pg">p. 4</span>
+  <h2><span class="u">3 families of SLAM</span></h2>
+  <p class="pencil">(roughly oldest → newest)</p>
+
+  <div class="fam">
+    <div>
+      <h4>① EKF-SLAM</h4>
+      <span class="tag">filter · 1990s</span>
+      <p>One big state vector: robot pose + every landmark. Keeps a covariance matrix linking them all.</p>
+      <p><span class="green">+</span> simple, classic<br><span class="red">−</span> cost grows as n² with landmarks<br><span class="red">−</span> linearisation errors</p>
+    </div>
+    <div>
+      <h4>② Particle filter</h4>
+      <span class="tag">FastSLAM · GMapping</span>
+      <p>Many "particles," each a guess of the robot's path with its own map. Bad guesses die off, good ones get copied.</p>
+      <p><span class="green">+</span> handles non-Gaussian noise<br><span class="red">−</span> needs lots of particles in big spaces</p>
+    </div>
+    <div>
+      <h4>③ Graph-based</h4>
+      <span class="tag">today's standard</span>
+      <p>Store poses as <b>nodes</b>, measurements as <b>edges</b>. Then solve for the poses that best agree with every edge.</p>
+      <p><span class="green">+</span> scales well, re-optimises after loop closure<br><span class="green">+</span> used by Cartographer, slam_toolbox, ORB-SLAM</p>
+    </div>
+  </div>
+
+  <h3>pose graph, drawn out</h3>
+  <figure>
+    <svg viewBox="0 0 700 300" role="img" aria-label="Pose graph: robot poses x0 to x5 linked by odometry edges, two landmarks linked by observation edges, and a red loop closure edge from x5 back to x0.">
+      <g class="wob">
+        <!-- odometry edges -->
+        <path class="ln" d="M70 200 L 170 150 L 280 122 L 400 128 L 510 168 L 600 220"/>
+        <!-- observation edges -->
+        <path class="ln p dash" d="M170 150 L 228 58 M280 122 L 232 60 M400 128 L 452 60 M510 168 L 458 62"/>
+        <!-- loop closure -->
+        <path class="ln r" d="M594 232 C 480 300, 200 300, 76 214"/>
+        <rect class="fillpaper" x="214" y="34" width="34" height="30"/>
+        <rect class="fillpaper" x="438" y="34" width="34" height="30"/>
+      </g>
+      <g>
+        <circle class="fillpaper" cx="70"  cy="200" r="20"/>
+        <circle class="fillpaper" cx="170" cy="150" r="20"/>
+        <circle class="fillpaper" cx="280" cy="122" r="20"/>
+        <circle class="fillpaper" cx="400" cy="128" r="20"/>
+        <circle class="fillpaper" cx="510" cy="168" r="20"/>
+        <circle class="fillpaper" cx="600" cy="220" r="20"/>
+      </g>
+      <text class="t s" x="70"  y="207" text-anchor="middle">x₀</text>
+      <text class="t s" x="170" y="157" text-anchor="middle">x₁</text>
+      <text class="t s" x="280" y="129" text-anchor="middle">x₂</text>
+      <text class="t s" x="400" y="135" text-anchor="middle">x₃</text>
+      <text class="t s" x="510" y="175" text-anchor="middle">x₄</text>
+      <text class="t s" x="600" y="227" text-anchor="middle">x₅</text>
+      <text class="t s" x="231" y="56" text-anchor="middle">L₁</text>
+      <text class="t s" x="455" y="56" text-anchor="middle">L₂</text>
+      <text class="t s" x="330" y="104">odometry</text>
+      <text class="t s p" x="270" y="30">observations (z)</text>
+      <text class="t s r" x="270" y="290">loop closure edge</text>
+      <text class="t s p" x="608" y="140">○ pose</text>
+      <text class="t s p" x="608" y="166">□ landmark</text>
+    </svg>
+  </figure>
+
+  <p>Each edge says "these two things should be this far apart," with some error <span class="red">e</span>. Solve:</p>
+  <div class="eq-wrap"><span class="eq">x* = argmin<sub>x</sub> Σ e<sub>ij</sub><sup>T</sup> Ω<sub>ij</sub> e<sub>ij</sub></span></div>
+  <p>= nonlinear least squares. <span class="red">Ω</span> = information matrix, i.e. how much we trust that edge. Solvers: <span class="pencil">g2o, Ceres, GTSAM</span>.</p>
+
+  <div class="cols">
+    <div>
+      <h3>front-end</h3>
+      <p>Turns raw sensor data into edges: scan matching, feature tracking, loop detection.</p>
+    </div>
+    <div>
+      <h3>back-end</h3>
+      <p>Takes the graph and optimises it into the best set of poses (the argmin above).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── PAGE 5 ───────── -->
+<section class="page">
+  <span class="pg">p. 5</span>
+  <h2><span class="u">Sensors &amp; maps</span></h2>
+
+  <div class="cols">
+    <div>
+      <h3>what it sees with</h3>
+      <ul class="dash">
+        <li><b>2D LiDAR</b>: one slice of distances. Cheap, reliable indoors.</li>
+        <li><b>3D LiDAR</b>: full point clouds, works outdoors.</li>
+        <li><b>Mono camera</b>: cheap, but <span class="red">can't tell scale</span> by itself.</li>
+        <li><b>Stereo / RGB-D</b>: camera + depth, so scale is known.</li>
+        <li><b>+ IMU</b>: fills the gaps during fast motion (VIO / LIO).</li>
+      </ul>
+    </div>
+    <div>
+      <h3>what map it builds</h3>
+      <ul class="dash">
+        <li><b>Occupancy grid</b>: cells marked free / occupied / unknown. Standard for 2D navigation.</li>
+        <li><b>Landmark map</b>: a list of feature points.</li>
+        <li><b>Point cloud</b>: raw 3D points.</li>
+        <li><b>Voxels / OctoMap</b>: 3D occupancy grid.</li>
+      </ul>
+    </div>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 700 210" role="img" aria-label="Occupancy grid legend: free cells are white, occupied cells are dark, unknown cells are grey; a LiDAR beam marks cells free along its path and occupied where it hits.">
+      <g>
+        <!-- grid 12x5 -->
+        <g class="ln thin p">
+          <path d="M40 20 H520 M40 56 H520 M40 92 H520 M40 128 H520 M40 164 H520 M40 200 H520"/>
+          <path d="M40 20 V200 M80 20 V200 M120 20 V200 M160 20 V200 M200 20 V200 M240 20 V200 M280 20 V200 M320 20 V200 M360 20 V200 M400 20 V200 M440 20 V200 M480 20 V200 M520 20 V200"/>
+        </g>
+        <!-- unknown -->
+        <g style="fill: var(--pencil); opacity:.35">
+          <rect x="440" y="20" width="80" height="180"/>
+          <rect x="400" y="20" width="40" height="36"/><rect x="400" y="164" width="40" height="36"/>
+        </g>
+        <!-- occupied -->
+        <g style="fill: var(--ink); opacity:.85">
+          <rect x="400" y="56" width="40" height="36"/><rect x="400" y="92" width="40" height="36"/><rect x="400" y="128" width="40" height="36"/>
+        </g>
+        <!-- beam -->
+        <path class="ln r" d="M70 110 L 398 110" marker-end="url(#ahr)"/>
+        <circle class="dot r" cx="64" cy="110" r="8"/>
+      </g>
+      <text class="t s" x="560" y="56">□ free</text>
+      <text class="t s" x="560" y="110">■ occupied</text>
+      <text class="t s p" x="560" y="164">▒ unknown</text>
+      <text class="t s r" x="140" y="100">laser beam</text>
+      <text class="t s r" x="76" y="146">robot</text>
+    </svg>
+    <figcaption>beam passes through → cells are free · beam stops → cell is occupied</figcaption>
+  </figure>
+
+  <h3>well-known systems</h3>
+  <ul class="dash">
+    <li><b>GMapping</b>: particle filter, 2D LiDAR, needs odometry</li>
+    <li><b>Hector SLAM</b>: 2D LiDAR, works without odometry</li>
+    <li><b>Cartographer</b> (Google): graph-based, 2D/3D LiDAR, submaps</li>
+    <li><b>slam_toolbox</b>: graph-based 2D LiDAR, the default SLAM for ROS 2 Nav2</li>
+    <li><b>ORB-SLAM3</b>: visual, mono/stereo/RGB-D with optional IMU</li>
+    <li><b>RTAB-Map</b>: RGB-D / stereo / LiDAR, strong loop closure</li>
+    <li><b>LIO-SAM</b>: 3D LiDAR + IMU, outdoors</li>
+  </ul>
+</section>
+
+<!-- ───────── PAGE 6 ───────── -->
+<section class="page">
+  <span class="pg">p. 6</span>
+  <h2><span class="u">On a real ROS 2 robot</span></h2>
+
+  <h3>the frames (tf tree)</h3>
+  <figure>
+    <svg viewBox="0 0 700 150" role="img" aria-label="TF chain: map to odom published by SLAM, odom to base_link published by odometry, base_link to laser published by the robot description.">
+      <g class="wob">
+        <rect class="fillpaper" x="10"  y="40" width="120" height="54" rx="8"/>
+        <rect class="fillpaper" x="200" y="40" width="120" height="54" rx="8"/>
+        <rect class="fillpaper" x="390" y="40" width="130" height="54" rx="8"/>
+        <rect class="fillpaper" x="590" y="40" width="100" height="54" rx="8"/>
+        <path class="ln r" d="M132 67 L 196 67" marker-end="url(#ahr)"/>
+        <path class="ln" d="M322 67 L 386 67" marker-end="url(#ah)"/>
+        <path class="ln p" d="M522 67 L 586 67" marker-end="url(#ah)"/>
+      </g>
+      <text class="t b" x="70"  y="75" text-anchor="middle">map</text>
+      <text class="t b" x="260" y="75" text-anchor="middle">odom</text>
+      <text class="t b" x="455" y="75" text-anchor="middle">base_link</text>
+      <text class="t b" x="640" y="75" text-anchor="middle">laser</text>
+      <text class="t s r" x="164" y="126" text-anchor="middle">SLAM</text>
+      <text class="t s"   x="354" y="126" text-anchor="middle">odometry</text>
+      <text class="t s p" x="554" y="126" text-anchor="middle">URDF</text>
+      <text class="t s p" x="350" y="24" text-anchor="middle">who publishes each link ↓</text>
+    </svg>
+  </figure>
+  <p>SLAM publishes <span class="red">map → odom</span>, which is the <u>drift correction</u>. Odometry stays smooth but drifts; SLAM nudges it back into place.</p>
+
+  <h3>slam_toolbox in 3 commands</h3>
+<div class="tape"><span class="c"># 1. start SLAM (robot's lidar + odom already running)</span>
+ros2 launch slam_toolbox online_async_launch.py
+
+<span class="c"># 2. drive around slowly (teleop), watch the map in RViz</span>
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+
+<span class="c"># 3. save the map when it looks right</span>
+ros2 run nav2_map_server map_saver_cli -f my_map</div>
+
+  <h3>tips for a clean map</h3>
+  <ul class="check">
+    <li>Drive <b>slowly</b>, and turn slower still. Fast spins blur scans.</li>
+    <li>Come back to the start so a <span class="green">loop closure</span> happens.</li>
+    <li>Check the laser's position in the URDF. A wrong offset gives doubled walls.</li>
+    <li>Good odometry makes for an easier SLAM. Calibrate wheel size and wheel spacing.</li>
+    <li>Long blank corridors and glass are hard: few features to match.</li>
+  </ul>
+
+  <div class="sticky">
+    <strong>One-line summary</strong>
+    SLAM = predict where you moved, check it against what you see, fix both the pose and the map, and use loop closures to undo drift.
+  </div>
+</section>
+
+</main>
+</body>
+</html>

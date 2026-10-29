@@ -1,0 +1,1023 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>SLAM Chapter 2 Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Permanent+Marker&display=swap">
+<style>
+/* Layout: engineering-pad sheets (green 5 mm grid), each set out Cornell-style: cue questions on the left, notes on the right, a summary strip at the foot. */
+:root {
+  --desk:   #dfe6e1;
+  --paper:  #f2f8ef;
+  --grid:   #d6e7d0;
+  --grid2:  #bcd8b3;
+  --ink:    #2b3033;   /* graphite */
+  --soft:   #66706b;   /* light pencil */
+  --orange: #d9571a;   /* marker */
+  --teal:   #0f7470;   /* fineliner */
+  --red:    #c2312b;
+  --hl:     rgba(255, 166, 64, .42);
+  --cellon: rgba(15, 116, 112, .55);
+  --shadow: rgba(25, 45, 35, .16);
+  --marker: "Permanent Marker", "Segoe Print", "Comic Sans MS", cursive;
+  --hand:   "Kalam", "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  --mono:   ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --cue: 176px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --desk: #0f1412; --paper: #18201c; --grid: #212c26; --grid2: #2b3a31;
+    --ink: #e2e8e3; --soft: #93a097; --orange: #ff9454; --teal: #63d0c8; --red: #ff8a7a;
+    --hl: rgba(255, 150, 50, .26); --cellon: rgba(99, 208, 200, .5); --shadow: rgba(0,0,0,.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --desk: #0f1412; --paper: #18201c; --grid: #212c26; --grid2: #2b3a31;
+  --ink: #e2e8e3; --soft: #93a097; --orange: #ff9454; --teal: #63d0c8; --red: #ff8a7a;
+  --hl: rgba(255, 150, 50, .26); --cellon: rgba(99, 208, 200, .5); --shadow: rgba(0,0,0,.5);
+  color-scheme: dark;
+}
+
+body {
+  background: var(--desk); color: var(--ink);
+  font-family: var(--hand); font-weight: 400; font-size: 19px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 64px;
+}
+.stack { max-width: 900px; margin: 0 auto; display: grid; gap: 44px; }
+
+.sheet {
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid2) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid2) 1px, transparent 1px),
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+  box-shadow: 0 1px 2px var(--shadow), 0 14px 30px var(--shadow);
+  min-width: 0;
+}
+
+/* engineering-pad title block */
+.tb {
+  display: grid; grid-template-columns: 1.1fr 2.6fr .9fr .7fr;
+  border-bottom: 2.5px solid var(--ink);
+}
+.tb > div { padding: 6px 14px 8px; border-right: 1.5px solid var(--ink); min-width: 0; }
+.tb > div:last-child { border-right: 0; }
+.tb .k { display: block; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--soft); line-height: 1.4; }
+.tb .v { font-size: 20px; font-weight: 700; line-height: 1.3; }
+.tb .v.topic { font-family: var(--marker); font-weight: 400; font-size: 24px; color: var(--teal); }
+
+.row { display: grid; grid-template-columns: var(--cue) minmax(0, 1fr); }
+.cue {
+  border-right: 2.5px solid var(--orange);
+  padding: 18px 16px 18px 18px;
+  color: var(--teal); font-size: 17px; line-height: 1.45; font-weight: 700;
+}
+.note { padding: 18px 26px 22px 22px; min-width: 0; }
+.note > * + * { margin-top: 12px; }
+.row + .row .cue, .row + .row .note { border-top: 1.5px dashed var(--grid2); }
+
+h1 { font-family: var(--marker); font-weight: 400; font-size: 54px; line-height: 1.1; margin: 0; text-wrap: balance; }
+h1 .ch { display: block; font-family: var(--hand); font-size: 22px; font-weight: 700; color: var(--orange); letter-spacing: .08em; }
+h2 { font-family: var(--marker); font-weight: 400; font-size: 26px; line-height: 1.25; margin: 0; text-wrap: balance; }
+p, ul, ol { margin: 0; }
+ul, ol { padding-left: 26px; }
+ul.d { list-style: none; padding-left: 24px; }
+ul.d > li { position: relative; }
+ul.d > li::before { content: "•"; position: absolute; left: -18px; color: var(--orange); }
+ol li::marker { color: var(--orange); font-weight: 700; }
+
+mark { background: linear-gradient(97deg, transparent 1%, var(--hl) 4%, var(--hl) 96%, transparent 99%); color: inherit; padding: 0 3px; }
+.o { color: var(--orange); }
+.t { color: var(--teal); }
+.r { color: var(--red); }
+.soft { color: var(--soft); }
+u { text-decoration-color: var(--orange); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+b { font-weight: 700; }
+
+.eq {
+  display: inline-block; max-width: 100%; overflow-x: auto;
+  font-size: 23px; font-weight: 700; padding: 6px 16px;
+  border: 2px solid var(--teal); border-radius: 4px 14px 6px 12px / 12px 6px 14px 4px;
+}
+.eq sub, .eq sup { font-size: 15px; line-height: 0; }
+.eqs { display: grid; gap: 8px; justify-items: start; }
+
+.box {
+  border: 2.5px solid var(--ink); padding: 10px 16px 12px;
+  border-radius: 2px 18px 3px 14px / 14px 3px 18px 2px;
+}
+.box .lab { font-family: var(--marker); font-size: 17px; letter-spacing: .04em; display: block; color: var(--orange); }
+.box.warn { border-color: var(--red); }
+.box.warn .lab { color: var(--red); }
+
+.summary { border-top: 4px double var(--ink); padding: 14px 26px 20px 22px; display: grid; grid-template-columns: calc(var(--cue) - 22px) minmax(0, 1fr); gap: 22px; }
+.summary .lab { font-family: var(--marker); font-size: 20px; color: var(--orange); }
+
+figure { margin: 0; overflow-x: auto; }
+figure svg { display: block; width: 100%; height: auto; min-width: 480px; }
+figcaption { font-size: 16px; color: var(--soft); text-align: center; }
+
+.ln { fill: none; stroke: var(--ink); stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
+.ln.o { stroke: var(--orange); } .ln.t { stroke: var(--teal); } .ln.r { stroke: var(--red); }
+.ln.p { stroke: var(--soft); } .ln.thin { stroke-width: 1.5; } .ln.dash { stroke-dasharray: 6 6; }
+.dot { fill: var(--ink); stroke: none; } .dot.o { fill: var(--orange); } .dot.t { fill: var(--teal); }
+.bx { fill: var(--paper); stroke: var(--ink); stroke-width: 2.3; }
+.bx.t { stroke: var(--teal); } .bx.o { stroke: var(--orange); }
+.tx { font-family: var(--hand); font-size: 21px; font-weight: 700; fill: var(--ink); }
+.tx.s { font-size: 17px; font-weight: 400; }
+.tx.o { fill: var(--orange); } .tx.t { fill: var(--teal); } .tx.r { fill: var(--red); } .tx.p { fill: var(--soft); }
+.tx.m { font-family: var(--marker); font-weight: 400; }
+.cell { fill: var(--paper); stroke: var(--soft); stroke-width: 1; }
+.cell.on { fill: var(--cellon); }
+.cell.lc { fill: var(--orange); }
+.ah { fill: var(--ink); } .ah.o { fill: var(--orange); } .ah.t { fill: var(--teal); }
+.wob { filter: url(#wob); }
+
+table.nt { border-collapse: collapse; width: 100%; font-size: 18px; }
+table.nt td { padding: 2px 10px 2px 0; vertical-align: top; border-bottom: 1px dashed var(--grid2); }
+table.nt td:first-child { font-weight: 700; color: var(--orange); white-space: nowrap; width: 56px; }
+.tw { overflow-x: auto; }
+
+.code {
+  font-family: var(--mono); font-size: 14.5px; line-height: 1.6; white-space: pre; overflow-x: auto;
+  background: var(--paper); border: 1.5px solid var(--soft); padding: 12px 14px; color: var(--ink);
+}
+.code .c { color: var(--soft); }
+
+@media (max-width: 680px) {
+  body { font-size: 18px; }
+  .tb { grid-template-columns: 1fr 1fr; }
+  .tb > div:nth-child(2) { border-right: 0; }
+  .tb > div:nth-child(1), .tb > div:nth-child(2) { border-bottom: 1.5px solid var(--ink); }
+  .row { grid-template-columns: minmax(0, 1fr); }
+  .cue { border-right: 0; border-left: 4px solid var(--orange); padding: 12px 16px 4px 14px; }
+  .note { padding: 8px 16px 20px 18px; }
+  .row + .row .note { border-top: 0; }
+  .summary { grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 14px 16px 18px; }
+  h1 { font-size: 40px; }
+  h2 { font-size: 23px; }
+  .eq { font-size: 19px; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="wob" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="11"/>
+      <feDisplacementMap in="SourceGraphic" scale="3"/>
+    </filter>
+    <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 L3 5 Z"/></marker>
+    <marker id="aho" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah o" d="M0 0 L10 5 L0 10 L3 5 Z"/></marker>
+    <marker id="aht" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah t" d="M0 0 L10 5 L0 10 L3 5 Z"/></marker>
+  </defs>
+</svg>
+
+<main class="stack">
+
+<!-- ═════════ SHEET 1 ═════════ -->
+<section class="sheet">
+  <div class="tb">
+    <div><span class="k">Subject</span><span class="v">SLAM</span></div>
+    <div><span class="k">Topic</span><span class="v topic">Chapter 2 overview</span></div>
+    <div><span class="k">Date</span><span class="v">28.10.26</span></div>
+    <div><span class="k">Sheet</span><span class="v">1 / 7</span></div>
+  </div>
+
+  <div class="row">
+    <div class="cue"></div>
+    <div class="note">
+      <h1><span class="ch">CHAPTER 2</span>Inside the machine</h1>
+      <p class="soft">How each box in the SLAM loop actually does its job.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">Where did ch. 1 leave off?</div>
+    <div class="note">
+      <ul class="d">
+        <li>SLAM repeats <b>predict</b> (odometry) → <b>correct</b> (sensor).</li>
+        <li>Errors pile up as <span class="r">drift</span>; <b>loop closures</b> pull it back.</li>
+        <li>Modern SLAM is <mark>graph-based</mark>: poses are nodes, measurements are edges.</li>
+        <li><b>Front-end</b> builds the edges. <b>Back-end</b> optimises the graph.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">What's in this chapter?</div>
+    <div class="note">
+      <figure>
+        <svg viewBox="0 0 720 270" role="img" aria-label="Pipeline: sensor data goes into the front-end (motion model, scan matching, visual features, loop detection), which feeds the back-end (optimisation and robust kernels), which outputs the map and path.">
+          <g class="wob">
+            <rect class="bx" x="8" y="100" width="112" height="70" rx="6"/>
+            <rect class="bx t" x="160" y="18" width="250" height="236" rx="8"/>
+            <rect class="bx o" x="470" y="58" width="168" height="156" rx="8"/>
+            <path class="ln" d="M122 135 L 156 135" marker-end="url(#ah)"/>
+            <path class="ln" d="M412 135 L 466 135" marker-end="url(#ah)"/>
+            <path class="ln" d="M640 135 L 664 135" marker-end="url(#ah)"/>
+          </g>
+          <text class="tx" x="64" y="130" text-anchor="middle">sensors</text>
+          <text class="tx s p" x="64" y="155" text-anchor="middle">odom · lidar</text>
+          <text class="tx m t" x="285" y="52" text-anchor="middle">FRONT-END</text>
+          <text class="tx s" x="180" y="96">motion model ··· sheet 2</text>
+          <text class="tx s" x="180" y="134">scan matching ··· sheet 3</text>
+          <text class="tx s" x="180" y="172">visual features ··· sheet 4</text>
+          <text class="tx s" x="180" y="210">loop detection ··· sheet 6</text>
+          <text class="tx m o" x="554" y="92" text-anchor="middle">BACK-END</text>
+          <text class="tx s" x="486" y="134">optimise ··· sheet 5</text>
+          <text class="tx s" x="486" y="172">robust kernels ··· 6</text>
+          <text class="tx s p" x="440" y="118" text-anchor="middle">graph</text>
+          <text class="tx s" x="692" y="128" text-anchor="middle">map</text>
+          <text class="tx s" x="692" y="152" text-anchor="middle">+ path</text>
+        </svg>
+        <figcaption>sheet 7 = how to tell if the result is any good</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">Notation I'll use</div>
+    <div class="note">
+      <div class="tw"><table class="nt">
+        <tr><td>x<sub>t</sub></td><td>robot pose at time t: (x, y, θ)</td></tr>
+        <tr><td>u<sub>t</sub></td><td>odometry / control between t−1 and t</td></tr>
+        <tr><td>z<sub>t</sub></td><td>measurement (a scan, an image)</td></tr>
+        <tr><td>m</td><td>the map</td></tr>
+        <tr><td>R, t</td><td>rotation + translation, the rigid transform between two frames</td></tr>
+        <tr><td>e</td><td>error of one edge: predicted minus measured</td></tr>
+        <tr><td>Ω</td><td>information matrix = inverse covariance = how much we trust an edge</td></tr>
+        <tr><td>J</td><td>Jacobian: how e changes when x changes a tiny bit</td></tr>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="summary">
+    <span class="lab">Summary</span>
+    <p>Chapter 2 opens up the front-end (turning raw data into edges) and the back-end (solving the graph), then covers how to measure the result.</p>
+  </div>
+</section>
+
+<!-- ═════════ SHEET 2 ═════════ -->
+<section class="sheet">
+  <div class="tb">
+    <div><span class="k">Subject</span><span class="v">SLAM</span></div>
+    <div><span class="k">Topic</span><span class="v topic">The motion model</span></div>
+    <div><span class="k">Date</span><span class="v">28.10.26</span></div>
+    <div><span class="k">Sheet</span><span class="v">2 / 7</span></div>
+  </div>
+
+  <div class="row">
+    <div class="cue">What does odometry actually give us?</div>
+    <div class="note">
+      <p>Wheel encoders count ticks → distance rolled by each wheel, d<sub>L</sub> and d<sub>R</sub>. For a differential-drive robot with wheel spacing <b>b</b>:</p>
+      <div class="eqs">
+        <span class="eq">d = (d<sub>L</sub> + d<sub>R</sub>) / 2 &nbsp;&nbsp;&nbsp; Δθ = (d<sub>R</sub> − d<sub>L</sub>) / b</span>
+      </div>
+      <p>Integrate these every tick → odom pose. Smooth, fast, and <span class="r">always drifting</span>.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">How is one move described?</div>
+    <div class="note">
+      <p>Split any move from pose A to pose B into <mark>turn → drive straight → turn</mark>:</p>
+      <figure>
+        <svg viewBox="0 0 700 300" role="img" aria-label="Left: a move broken into rot1, a straight translation, and rot2. Right: samples of where the robot could end up form a curved banana-shaped cloud.">
+          <!-- left: decomposition -->
+          <g class="wob">
+            <path class="bx" d="M60 236 L 104 222 L 60 208 Z"/>
+            <path class="bx" d="M318 74 L 344 112 L 352 66 Z"/>
+            <path class="ln dash p" d="M84 222 L 330 86"/>
+            <path class="ln p thin" d="M84 222 L 190 222"/>
+            <path class="ln o" d="M160 222 A 76 76 0 0 0 150 186" marker-end="url(#aho)"/>
+            <path class="ln p thin" d="M334 88 L 392 56"/>
+            <path class="ln o" d="M376 64 A 50 50 0 0 0 360 44" marker-end="url(#aho)"/>
+          </g>
+          <text class="tx o" x="168" y="200">rot1</text>
+          <text class="tx t" x="170" y="140" transform="rotate(-29 170 140)">trans</text>
+          <text class="tx o" x="384" y="36">rot2</text>
+          <text class="tx s" x="34" y="268">A (start)</text>
+          <text class="tx s" x="268" y="134">B</text>
+
+          <!-- right: banana -->
+          <path class="ln p thin" d="M420 18 L 420 290"/>
+          <g class="wob"><path class="bx" d="M458 278 L 470 246 L 482 278 Z"/></g>
+          <circle class="dot o" cx="531.9" cy="99.2" r="2.6"/>
+<circle class="dot o" cx="549.6" cy="102.4" r="2.6"/>
+<circle class="dot o" cx="591.7" cy="155.0" r="2.6"/>
+<circle class="dot o" cx="490.2" cy="100.3" r="2.6"/>
+<circle class="dot o" cx="541.0" cy="103.4" r="2.6"/>
+<circle class="dot o" cx="625.5" cy="175.8" r="2.6"/>
+<circle class="dot o" cx="536.3" cy="111.6" r="2.6"/>
+<circle class="dot o" cx="586.7" cy="141.2" r="2.6"/>
+<circle class="dot o" cx="542.7" cy="111.2" r="2.6"/>
+<circle class="dot o" cx="479.1" cy="97.9" r="2.6"/>
+<circle class="dot o" cx="506.1" cy="95.2" r="2.6"/>
+<circle class="dot o" cx="485.3" cy="100.0" r="2.6"/>
+<circle class="dot o" cx="575.5" cy="136.9" r="2.6"/>
+<circle class="dot o" cx="459.0" cy="101.7" r="2.6"/>
+<circle class="dot o" cx="482.1" cy="98.0" r="2.6"/>
+<circle class="dot o" cx="564.0" cy="119.1" r="2.6"/>
+<circle class="dot o" cx="592.1" cy="138.6" r="2.6"/>
+<circle class="dot o" cx="579.0" cy="142.3" r="2.6"/>
+<circle class="dot o" cx="560.4" cy="118.2" r="2.6"/>
+<circle class="dot o" cx="543.6" cy="114.2" r="2.6"/>
+<circle class="dot o" cx="474.1" cy="80.3" r="2.6"/>
+<circle class="dot o" cx="584.3" cy="131.6" r="2.6"/>
+<circle class="dot o" cx="562.1" cy="116.2" r="2.6"/>
+<circle class="dot o" cx="454.6" cy="92.1" r="2.6"/>
+<circle class="dot o" cx="556.7" cy="105.5" r="2.6"/>
+<circle class="dot o" cx="557.0" cy="95.6" r="2.6"/>
+<circle class="dot o" cx="509.7" cy="120.2" r="2.6"/>
+<circle class="dot o" cx="538.7" cy="90.0" r="2.6"/>
+<circle class="dot o" cx="416.6" cy="88.5" r="2.6"/>
+<circle class="dot o" cx="460.6" cy="93.8" r="2.6"/>
+<circle class="dot o" cx="502.0" cy="93.3" r="2.6"/>
+<circle class="dot o" cx="603.1" cy="157.2" r="2.6"/>
+<circle class="dot o" cx="557.8" cy="114.7" r="2.6"/>
+<circle class="dot o" cx="479.0" cy="93.3" r="2.6"/>
+<circle class="dot o" cx="576.7" cy="131.1" r="2.6"/>
+<circle class="dot o" cx="547.4" cy="104.9" r="2.6"/>
+<circle class="dot o" cx="514.0" cy="102.5" r="2.6"/>
+<circle class="dot o" cx="543.2" cy="108.3" r="2.6"/>
+<circle class="dot o" cx="575.0" cy="118.7" r="2.6"/>
+<circle class="dot o" cx="474.6" cy="81.8" r="2.6"/>
+<circle class="dot o" cx="534.3" cy="94.7" r="2.6"/>
+<circle class="dot o" cx="540.4" cy="107.1" r="2.6"/>
+<circle class="dot o" cx="551.7" cy="123.6" r="2.6"/>
+<circle class="dot o" cx="536.1" cy="105.0" r="2.6"/>
+<circle class="dot o" cx="547.5" cy="90.7" r="2.6"/>
+<circle class="dot o" cx="545.3" cy="98.0" r="2.6"/>
+<circle class="dot o" cx="575.8" cy="129.6" r="2.6"/>
+<circle class="dot o" cx="483.6" cy="88.8" r="2.6"/>
+<circle class="dot o" cx="505.3" cy="95.6" r="2.6"/>
+<circle class="dot o" cx="625.1" cy="158.3" r="2.6"/>
+<circle class="dot o" cx="489.5" cy="81.8" r="2.6"/>
+<circle class="dot o" cx="454.9" cy="88.3" r="2.6"/>
+<circle class="dot o" cx="482.0" cy="103.8" r="2.6"/>
+<circle class="dot o" cx="622.1" cy="178.7" r="2.6"/>
+<circle class="dot o" cx="621.7" cy="194.9" r="2.6"/>
+<circle class="dot o" cx="515.7" cy="94.3" r="2.6"/>
+<circle class="dot o" cx="591.9" cy="147.3" r="2.6"/>
+<circle class="dot o" cx="536.4" cy="113.9" r="2.6"/>
+<circle class="dot o" cx="519.0" cy="120.9" r="2.6"/>
+<circle class="dot o" cx="532.8" cy="102.6" r="2.6"/>
+<circle class="dot o" cx="544.6" cy="112.7" r="2.6"/>
+<circle class="dot o" cx="439.8" cy="86.4" r="2.6"/>
+<circle class="dot o" cx="550.3" cy="116.9" r="2.6"/>
+<circle class="dot o" cx="487.7" cy="80.8" r="2.6"/>
+<circle class="dot o" cx="464.0" cy="90.1" r="2.6"/>
+<circle class="dot o" cx="527.4" cy="111.2" r="2.6"/>
+<circle class="dot o" cx="565.9" cy="133.0" r="2.6"/>
+<circle class="dot o" cx="564.2" cy="119.0" r="2.6"/>
+<circle class="dot o" cx="610.1" cy="163.7" r="2.6"/>
+<circle class="dot o" cx="506.9" cy="104.8" r="2.6"/>
+<circle class="dot o" cx="535.4" cy="113.3" r="2.6"/>
+<circle class="dot o" cx="584.4" cy="131.0" r="2.6"/>
+<circle class="dot o" cx="582.8" cy="124.0" r="2.6"/>
+<circle class="dot o" cx="484.9" cy="109.0" r="2.6"/>
+<circle class="dot o" cx="530.2" cy="106.6" r="2.6"/>
+<circle class="dot o" cx="503.7" cy="101.0" r="2.6"/>
+<circle class="dot o" cx="442.4" cy="86.6" r="2.6"/>
+<circle class="dot o" cx="606.6" cy="157.1" r="2.6"/>
+<circle class="dot o" cx="480.1" cy="92.0" r="2.6"/>
+<circle class="dot o" cx="498.7" cy="94.7" r="2.6"/>
+<circle class="dot o" cx="505.5" cy="85.1" r="2.6"/>
+<circle class="dot o" cx="533.7" cy="108.2" r="2.6"/>
+<circle class="dot o" cx="537.4" cy="87.1" r="2.6"/>
+<circle class="dot o" cx="598.1" cy="131.9" r="2.6"/>
+<circle class="dot o" cx="494.5" cy="105.0" r="2.6"/>
+<circle class="dot o" cx="596.9" cy="180.8" r="2.6"/>
+<circle class="dot o" cx="494.2" cy="76.6" r="2.6"/>
+<circle class="dot o" cx="456.9" cy="97.1" r="2.6"/>
+<circle class="dot o" cx="531.4" cy="112.6" r="2.6"/>
+<circle class="dot o" cx="505.4" cy="91.3" r="2.6"/>
+          <text class="tx s" x="500" y="282">start</text>
+          <text class="tx o" x="440" y="30">possible end poses</text>
+          <text class="tx s p" x="440" y="54">"the banana"</text>
+        </svg>
+      </figure>
+      <div class="eqs">
+        <span class="eq">δ<sub>rot1</sub> = atan2(y′−y, x′−x) − θ</span>
+        <span class="eq">δ<sub>trans</sub> = √((x′−x)² + (y′−y)²)</span>
+        <span class="eq">δ<sub>rot2</sub> = θ′ − θ − δ<sub>rot1</sub></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">Where does the noise go?</div>
+    <div class="note">
+      <p>Each of the three parts gets its own noise. The noise <u>grows with the size of the move</u>:</p>
+      <span class="eq">σ²<sub>rot1</sub> = α<sub>1</sub>δ²<sub>rot1</sub> + α<sub>2</sub>δ²<sub>trans</sub></span>
+      <p>(similar for trans and rot2). The α's are tuning knobs. Nav2's AMCL exposes them as <code>alpha1 … alpha5</code>.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">Why a banana and not an ellipse?</div>
+    <div class="note">
+      <p>A small heading error × a long distance = a big <b>sideways</b> error. So the cloud bends around the start point. An EKF squashes it into an ellipse; that mismatch is one source of <span class="r">linearisation error</span>.</p>
+      <div class="box">
+        <span class="lab">Calibrate first</span>
+        Measure <b>b</b> and the wheel radius carefully. A 2% error in b is a 2% error in every turn, so about <mark>7° lost per full rotation</mark>.
+      </div>
+    </div>
+  </div>
+
+  <div class="summary">
+    <span class="lab">Summary</span>
+    <p>Odometry gives a turn-drive-turn guess. Its uncertainty grows with distance and turning, and it bends into a banana shape.</p>
+  </div>
+</section>
+
+<!-- ═════════ SHEET 3 ═════════ -->
+<section class="sheet">
+  <div class="tb">
+    <div><span class="k">Subject</span><span class="v">SLAM</span></div>
+    <div><span class="k">Topic</span><span class="v topic">Sensor model &amp; scan matching</span></div>
+    <div><span class="k">Date</span><span class="v">28.10.26</span></div>
+    <div><span class="k">Sheet</span><span class="v">3 / 7</span></div>
+  </div>
+
+  <div class="row">
+    <div class="cue">What's the sensor model?</div>
+    <div class="note">
+      <p><b>p(z | x, m)</b> = "if I'm at x in map m, how likely is this scan?" Used to <u>score</u> a pose guess.</p>
+      <ul class="d">
+        <li><b>Beam model</b>: traces every ray. Mix of 4 cases: hit the wall, something closer (a person), max range, random junk. Accurate but slow.</li>
+        <li><b>Likelihood field</b>: precompute, for every map cell, the <mark>distance to the nearest wall</mark>. Score each scan endpoint by how close it lands to a wall. Fast and smooth, so it's what most 2D systems use.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">What is ICP?</div>
+    <div class="note">
+      <p><b>Iterative Closest Point</b> lines up a new scan (<span class="o">orange</span>) with a reference (<span class="t">teal</span>):</p>
+      <figure>
+        <svg viewBox="0 0 700 200" role="img" aria-label="Three ICP iterations: the orange scan starts rotated and offset from the teal reference, each point is paired with its nearest reference point, and the scan moves closer until it lines up.">
+          <path class="ln p thin" d="M56.0 86.0 L52.0 60.0"/>
+<path class="ln p thin" d="M67.4 89.7 L64.0 60.0"/>
+<path class="ln p thin" d="M78.8 93.4 L76.0 60.0"/>
+<path class="ln p thin" d="M90.2 97.1 L88.0 60.0"/>
+<path class="ln p thin" d="M101.7 100.8 L100.0 60.0"/>
+<path class="ln p thin" d="M113.1 104.5 L112.0 60.0"/>
+<path class="ln p thin" d="M124.5 108.2 L160.0 110.0"/>
+<path class="ln p thin" d="M135.9 112.0 L160.0 110.0"/>
+<path class="ln p thin" d="M147.3 115.7 L160.0 120.0"/>
+<path class="ln p thin" d="M158.7 119.4 L160.0 120.0"/>
+<path class="ln p thin" d="M170.1 123.1 L160.0 120.0"/>
+<path class="ln p thin" d="M167.0 132.6 L160.0 130.0"/>
+<path class="ln p thin" d="M163.9 142.1 L160.0 140.0"/>
+<path class="ln p thin" d="M160.9 151.6 L160.0 140.0"/>
+<path class="ln p thin" d="M157.8 161.1 L160.0 140.0"/>
+<path class="ln p thin" d="M154.7 170.6 L160.0 140.0"/>
+<path class="ln p thin" d="M151.6 180.1 L160.0 140.0"/>
+<path class="ln p thin" d="M148.5 189.7 L160.0 140.0"/>
+<path class="ln p thin" d="M145.4 199.2 L160.0 140.0"/>
+<circle class="dot t" cx="40.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="52.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="64.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="76.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="88.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="100.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="112.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="124.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="136.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="148.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="160.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="160.0" cy="70.0" r="3.2"/>
+<circle class="dot t" cx="160.0" cy="80.0" r="3.2"/>
+<circle class="dot t" cx="160.0" cy="90.0" r="3.2"/>
+<circle class="dot t" cx="160.0" cy="100.0" r="3.2"/>
+<circle class="dot t" cx="160.0" cy="110.0" r="3.2"/>
+<circle class="dot t" cx="160.0" cy="120.0" r="3.2"/>
+<circle class="dot t" cx="160.0" cy="130.0" r="3.2"/>
+<circle class="dot t" cx="160.0" cy="140.0" r="3.2"/>
+<circle class="dot o" cx="56.0" cy="86.0" r="3.2"/>
+<circle class="dot o" cx="67.4" cy="89.7" r="3.2"/>
+<circle class="dot o" cx="78.8" cy="93.4" r="3.2"/>
+<circle class="dot o" cx="90.2" cy="97.1" r="3.2"/>
+<circle class="dot o" cx="101.7" cy="100.8" r="3.2"/>
+<circle class="dot o" cx="113.1" cy="104.5" r="3.2"/>
+<circle class="dot o" cx="124.5" cy="108.2" r="3.2"/>
+<circle class="dot o" cx="135.9" cy="112.0" r="3.2"/>
+<circle class="dot o" cx="147.3" cy="115.7" r="3.2"/>
+<circle class="dot o" cx="158.7" cy="119.4" r="3.2"/>
+<circle class="dot o" cx="170.1" cy="123.1" r="3.2"/>
+<circle class="dot o" cx="167.0" cy="132.6" r="3.2"/>
+<circle class="dot o" cx="163.9" cy="142.1" r="3.2"/>
+<circle class="dot o" cx="160.9" cy="151.6" r="3.2"/>
+<circle class="dot o" cx="157.8" cy="161.1" r="3.2"/>
+<circle class="dot o" cx="154.7" cy="170.6" r="3.2"/>
+<circle class="dot o" cx="151.6" cy="180.1" r="3.2"/>
+<circle class="dot o" cx="148.5" cy="189.7" r="3.2"/>
+<circle class="dot o" cx="145.4" cy="199.2" r="3.2"/>
+<text class="tx" x="110" y="36" text-anchor="middle">iteration 1</text>
+<path class="ln p thin" d="M281.0 70.0 L275.0 60.0"/>
+<path class="ln p thin" d="M292.9 71.5 L287.0 60.0"/>
+<path class="ln p thin" d="M304.8 72.9 L299.0 60.0"/>
+<path class="ln p thin" d="M316.7 74.4 L311.0 60.0"/>
+<path class="ln p thin" d="M328.6 75.8 L323.0 60.0"/>
+<path class="ln p thin" d="M340.6 77.3 L335.0 60.0"/>
+<path class="ln p thin" d="M352.5 78.8 L347.0 60.0"/>
+<path class="ln p thin" d="M364.4 80.2 L359.0 60.0"/>
+<path class="ln p thin" d="M376.3 81.7 L395.0 80.0"/>
+<path class="ln p thin" d="M388.2 83.2 L395.0 80.0"/>
+<path class="ln p thin" d="M400.1 84.6 L395.0 80.0"/>
+<path class="ln p thin" d="M398.9 94.5 L395.0 90.0"/>
+<path class="ln p thin" d="M397.7 104.5 L395.0 100.0"/>
+<path class="ln p thin" d="M396.4 114.4 L395.0 110.0"/>
+<path class="ln p thin" d="M395.2 124.3 L395.0 120.0"/>
+<path class="ln p thin" d="M394.0 134.3 L395.0 130.0"/>
+<path class="ln p thin" d="M392.8 144.2 L395.0 140.0"/>
+<path class="ln p thin" d="M391.6 154.1 L395.0 140.0"/>
+<path class="ln p thin" d="M390.4 164.0 L395.0 140.0"/>
+<circle class="dot t" cx="275.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="287.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="299.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="311.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="323.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="335.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="347.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="359.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="371.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="383.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="395.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="395.0" cy="70.0" r="3.2"/>
+<circle class="dot t" cx="395.0" cy="80.0" r="3.2"/>
+<circle class="dot t" cx="395.0" cy="90.0" r="3.2"/>
+<circle class="dot t" cx="395.0" cy="100.0" r="3.2"/>
+<circle class="dot t" cx="395.0" cy="110.0" r="3.2"/>
+<circle class="dot t" cx="395.0" cy="120.0" r="3.2"/>
+<circle class="dot t" cx="395.0" cy="130.0" r="3.2"/>
+<circle class="dot t" cx="395.0" cy="140.0" r="3.2"/>
+<circle class="dot o" cx="281.0" cy="70.0" r="3.2"/>
+<circle class="dot o" cx="292.9" cy="71.5" r="3.2"/>
+<circle class="dot o" cx="304.8" cy="72.9" r="3.2"/>
+<circle class="dot o" cx="316.7" cy="74.4" r="3.2"/>
+<circle class="dot o" cx="328.6" cy="75.8" r="3.2"/>
+<circle class="dot o" cx="340.6" cy="77.3" r="3.2"/>
+<circle class="dot o" cx="352.5" cy="78.8" r="3.2"/>
+<circle class="dot o" cx="364.4" cy="80.2" r="3.2"/>
+<circle class="dot o" cx="376.3" cy="81.7" r="3.2"/>
+<circle class="dot o" cx="388.2" cy="83.2" r="3.2"/>
+<circle class="dot o" cx="400.1" cy="84.6" r="3.2"/>
+<circle class="dot o" cx="398.9" cy="94.5" r="3.2"/>
+<circle class="dot o" cx="397.7" cy="104.5" r="3.2"/>
+<circle class="dot o" cx="396.4" cy="114.4" r="3.2"/>
+<circle class="dot o" cx="395.2" cy="124.3" r="3.2"/>
+<circle class="dot o" cx="394.0" cy="134.3" r="3.2"/>
+<circle class="dot o" cx="392.8" cy="144.2" r="3.2"/>
+<circle class="dot o" cx="391.6" cy="154.1" r="3.2"/>
+<circle class="dot o" cx="390.4" cy="164.0" r="3.2"/>
+<text class="tx" x="345" y="36" text-anchor="middle">iteration 2</text>
+<circle class="dot t" cx="510.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="522.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="534.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="546.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="558.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="570.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="582.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="594.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="606.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="618.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="630.0" cy="60.0" r="3.2"/>
+<circle class="dot t" cx="630.0" cy="70.0" r="3.2"/>
+<circle class="dot t" cx="630.0" cy="80.0" r="3.2"/>
+<circle class="dot t" cx="630.0" cy="90.0" r="3.2"/>
+<circle class="dot t" cx="630.0" cy="100.0" r="3.2"/>
+<circle class="dot t" cx="630.0" cy="110.0" r="3.2"/>
+<circle class="dot t" cx="630.0" cy="120.0" r="3.2"/>
+<circle class="dot t" cx="630.0" cy="130.0" r="3.2"/>
+<circle class="dot t" cx="630.0" cy="140.0" r="3.2"/>
+<circle class="dot o" cx="510.0" cy="60.0" r="3.2"/>
+<circle class="dot o" cx="522.0" cy="60.0" r="3.2"/>
+<circle class="dot o" cx="534.0" cy="60.0" r="3.2"/>
+<circle class="dot o" cx="546.0" cy="60.0" r="3.2"/>
+<circle class="dot o" cx="558.0" cy="60.0" r="3.2"/>
+<circle class="dot o" cx="570.0" cy="60.0" r="3.2"/>
+<circle class="dot o" cx="582.0" cy="60.0" r="3.2"/>
+<circle class="dot o" cx="594.0" cy="60.0" r="3.2"/>
+<circle class="dot o" cx="606.0" cy="60.0" r="3.2"/>
+<circle class="dot o" cx="618.0" cy="60.0" r="3.2"/>
+<circle class="dot o" cx="630.0" cy="60.0" r="3.2"/>
+<circle class="dot o" cx="630.0" cy="70.0" r="3.2"/>
+<circle class="dot o" cx="630.0" cy="80.0" r="3.2"/>
+<circle class="dot o" cx="630.0" cy="90.0" r="3.2"/>
+<circle class="dot o" cx="630.0" cy="100.0" r="3.2"/>
+<circle class="dot o" cx="630.0" cy="110.0" r="3.2"/>
+<circle class="dot o" cx="630.0" cy="120.0" r="3.2"/>
+<circle class="dot o" cx="630.0" cy="130.0" r="3.2"/>
+<circle class="dot o" cx="630.0" cy="140.0" r="3.2"/>
+<text class="tx" x="580" y="36" text-anchor="middle">converged ✓</text>
+          <path class="ln o" d="M228 110 L 250 110" marker-end="url(#aho)"/>
+          <path class="ln o" d="M463 110 L 485 110" marker-end="url(#aho)"/>
+          <text class="tx s p" x="350" y="190" text-anchor="middle">grey lines = nearest-neighbour pairs</text>
+        </svg>
+      </figure>
+      <ol>
+        <li>Pair each scan point with its <b>nearest</b> map point.</li>
+        <li>Throw out pairs that are too far apart (likely outliers).</li>
+        <li>Solve for the R, t that best overlaps the pairs (closed form, via SVD).</li>
+        <li>Move the scan. Repeat until the change is tiny.</li>
+      </ol>
+      <p class="soft">Variant: point-to-<b>line</b> ICP (PL-ICP) converges in fewer steps on walls.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">When does it fail?</div>
+    <div class="note">
+      <div class="box warn">
+        <span class="lab">Watch out</span>
+        <ul class="d">
+          <li><b>Bad initial guess</b> → locks onto the wrong wall (local minimum). That's why odometry feeds in first.</li>
+          <li><b>Long featureless corridor</b> → scan can slide along it; the forward direction is unconstrained.</li>
+          <li><b>Moving people</b> → pairs with things that aren't in the map.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">What do real systems use?</div>
+    <div class="note">
+      <ul class="d">
+        <li><b>slam_toolbox</b> (Karto-based): <mark>correlative scan matching</mark>. Brute-force tries a grid of (x, y, θ) around the guess, scores each with the likelihood field, then refines. Hard to fool with a bad initial guess.</li>
+        <li><b>Cartographer</b>: scan-to-<b>submap</b> matching solved with Ceres, plus branch-and-bound search for loop closures.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="summary">
+    <span class="lab">Summary</span>
+    <p>The sensor model scores a pose. Scan matching searches for the pose with the best score, and its result becomes an edge in the graph.</p>
+  </div>
+</section>
+
+<!-- ═════════ SHEET 4 ═════════ -->
+<section class="sheet">
+  <div class="tb">
+    <div><span class="k">Subject</span><span class="v">SLAM</span></div>
+    <div><span class="k">Topic</span><span class="v topic">The visual front-end</span></div>
+    <div><span class="k">Date</span><span class="v">28.10.26</span></div>
+    <div><span class="k">Sheet</span><span class="v">4 / 7</span></div>
+  </div>
+
+  <div class="row">
+    <div class="cue">What's a "feature"?</div>
+    <div class="note">
+      <p>A small patch that's easy to find again: a <b>corner</b>, not a blank wall.</p>
+      <ul class="d">
+        <li><b>Detector</b> says <u>where</u> (e.g. FAST corners).</li>
+        <li><b>Descriptor</b> says <u>what it looks like</u> (e.g. BRIEF = a 256-bit string).</li>
+        <li><mark>ORB</mark> = Oriented FAST + Rotated BRIEF. Fast and rotation-invariant, used by ORB-SLAM.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">How are features matched?</div>
+    <div class="note">
+      <p>Compare descriptors by <b>Hamming distance</b> (count the differing bits). Then use <b>RANSAC</b> to find the camera motion that most matches agree on; the rest are thrown out as outliers.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">How do we get 3D from 2D?</div>
+    <div class="note">
+      <figure>
+        <svg viewBox="0 0 700 280" role="img" aria-label="Triangulation: two camera positions each see the same 3D point along a ray; where the rays cross gives the point's depth. The distance between cameras is the baseline.">
+          <g class="wob">
+            <path class="bx t" d="M120 240 L 70 180 L 170 180 Z"/>
+            <path class="bx t" d="M560 240 L 510 180 L 610 180 Z"/>
+            <path class="ln o" d="M120 240 L 340 52"/>
+            <path class="ln o" d="M560 240 L 340 52"/>
+            <path class="ln p dash" d="M120 258 L 560 258"/>
+          </g>
+          <circle class="dot o" cx="340" cy="52" r="8"/>
+          <circle class="dot" cx="141" cy="180" r="5"/>
+          <circle class="dot" cx="537" cy="180" r="5"/>
+          <text class="tx" x="360" y="44">P (3D point)</text>
+          <text class="tx s" x="60" y="172">image 1</text>
+          <text class="tx s" x="560" y="172">image 2</text>
+          <text class="tx s" x="150" y="206">u₁</text>
+          <text class="tx s" x="512" y="206">u₂</text>
+          <text class="tx s p" x="340" y="252" text-anchor="middle">baseline</text>
+          <text class="tx s o" x="340" y="140" text-anchor="middle">rays cross → depth</text>
+        </svg>
+      </figure>
+      <p>One image only gives a <b>direction</b>. You need two views (or a depth sensor) to fix where along the ray P sits.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">Why can't mono know scale?</div>
+    <div class="note">
+      <p>A scene twice as big and twice as far away gives the <u>exact same image</u>. Mono SLAM maps in unknown units. Fix it with a stereo baseline, a depth camera, an <b>IMU</b>, or a known-size object.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">Keyframes and bundle adjustment?</div>
+    <div class="note">
+      <p><b>Keyframes</b>: don't keep every frame. Add one when the view has changed enough (e.g. too few features still tracked).</p>
+      <p><b>Bundle adjustment</b>: nudge keyframe poses <i>and</i> 3D points together so every point re-projects onto where it was actually seen:</p>
+      <span class="eq">min Σ ‖ u<sub>ij</sub> − π(T<sub>i</sub>, P<sub>j</sub>) ‖²</span>
+      <p class="soft">π = project 3D point into the camera. Error = <b>reprojection error</b> in pixels. Usually run on a local window of recent keyframes.</p>
+    </div>
+  </div>
+
+  <div class="summary">
+    <span class="lab">Summary</span>
+    <p>Find corners, match them, triangulate them, and refine with bundle adjustment. Mono can't see scale, so add depth or an IMU.</p>
+  </div>
+</section>
+
+<!-- ═════════ SHEET 5 ═════════ -->
+<section class="sheet">
+  <div class="tb">
+    <div><span class="k">Subject</span><span class="v">SLAM</span></div>
+    <div><span class="k">Topic</span><span class="v topic">Back-end: solving the graph</span></div>
+    <div><span class="k">Date</span><span class="v">28.10.26</span></div>
+    <div><span class="k">Sheet</span><span class="v">5 / 7</span></div>
+  </div>
+
+  <div class="row">
+    <div class="cue">What are we minimising?</div>
+    <div class="note">
+      <span class="eq">F(x) = Σ e<sub>ij</sub>(x)<sup>T</sup> Ω<sub>ij</sub> e<sub>ij</sub>(x)</span>
+      <p>The total weighted disagreement over all edges. It's nonlinear because of the angles (sin, cos), so there's no one-shot answer. We <mark>linearise and iterate</mark>.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">How does Gauss-Newton work?</div>
+    <div class="note">
+      <ol>
+        <li>Linearise each edge: e(x + Δx) ≈ e + J Δx</li>
+        <li>Build <b>H = Σ J<sup>T</sup>ΩJ</b> and <b>b = Σ J<sup>T</sup>Ωe</b></li>
+        <li>Solve <span class="eq" style="font-size:19px;padding:2px 10px">H Δx = −b</span></li>
+        <li>x ← x + Δx, then repeat. A handful of iterations is usually enough.</li>
+      </ol>
+      <figure>
+        <svg viewBox="0 0 700 260" role="img" aria-label="Left: a bowl-shaped cost curve with steps x0 to x3 descending to the minimum. Right: the H matrix is mostly empty; filled cells form a band along the diagonal from odometry edges plus two corner cells from a loop closure.">
+          <path class="ln" d="M40.0 20.8 L46.0 31.2 L52.0 41.3 L58.0 51.2 L64.0 60.7 L70.0 69.9 L76.0 78.8 L82.0 87.5 L88.0 95.8 L94.0 103.8 L100.0 111.5 L106.0 118.9 L112.0 126.0 L118.0 132.8 L124.0 139.3 L130.0 145.5 L136.0 151.4 L142.0 157.0 L148.0 162.3 L154.0 167.3 L160.0 172.0 L166.0 176.4 L172.0 180.4 L178.0 184.2 L184.0 187.7 L190.0 190.9 L196.0 193.8 L202.0 196.3 L208.0 198.6 L214.0 200.6 L220.0 202.2 L226.0 203.6 L232.0 204.6 L238.0 205.4 L244.0 205.8 L250.0 206.0 L256.0 205.8 L262.0 205.4 L268.0 204.6 L274.0 203.6 L280.0 202.2 L286.0 200.6 L292.0 198.6 L298.0 196.3 L304.0 193.8 L310.0 190.9 L316.0 187.7 L322.0 184.2 L328.0 180.4 L334.0 176.4 L340.0 172.0 L346.0 167.3 L352.0 162.3 L358.0 157.0 L364.0 151.4 L370.0 145.5 L376.0 139.3 L382.0 132.8 L388.0 126.0"/>
+          <circle class="dot o" cx="60" cy="54.4" r="6"/>
+<text class="tx s o" x="54" y="82.4" text-anchor="middle">x₀</text>
+<path class="ln o thin" d="M60 44.4 Q 125.0 6.4 190 180.9" marker-end="url(#aho)"/>
+<circle class="dot o" cx="190" cy="190.9" r="6"/>
+<text class="tx s o" x="184" y="218.9" text-anchor="middle">x₁</text>
+<path class="ln o thin" d="M190 180.9 Q 214.0 142.9 238 195.4" marker-end="url(#aho)"/>
+<circle class="dot o" cx="238" cy="205.4" r="6"/>
+<text class="tx s o" x="232" y="233.4" text-anchor="middle">x₂</text>
+<path class="ln o thin" d="M238 195.4 Q 243.5 157.4 249 196.0" marker-end="url(#aho)"/>
+<circle class="dot o" cx="249" cy="206.0" r="6"/>
+<text class="tx s o" x="243" y="234.0" text-anchor="middle">x₃</text>
+          <text class="tx s p" x="40" y="30">cost F(x)</text>
+          <text class="tx s o" x="250" y="252" text-anchor="middle">minimum</text>
+          <rect class="cell on" x="450" y="40" width="28" height="28"/>
+<rect class="cell on" x="478" y="40" width="28" height="28"/>
+<rect class="cell" x="506" y="40" width="28" height="28"/>
+<rect class="cell" x="534" y="40" width="28" height="28"/>
+<rect class="cell" x="562" y="40" width="28" height="28"/>
+<rect class="cell" x="590" y="40" width="28" height="28"/>
+<rect class="cell lc" x="618" y="40" width="28" height="28"/>
+<rect class="cell on" x="450" y="68" width="28" height="28"/>
+<rect class="cell on" x="478" y="68" width="28" height="28"/>
+<rect class="cell on" x="506" y="68" width="28" height="28"/>
+<rect class="cell" x="534" y="68" width="28" height="28"/>
+<rect class="cell" x="562" y="68" width="28" height="28"/>
+<rect class="cell" x="590" y="68" width="28" height="28"/>
+<rect class="cell" x="618" y="68" width="28" height="28"/>
+<rect class="cell" x="450" y="96" width="28" height="28"/>
+<rect class="cell on" x="478" y="96" width="28" height="28"/>
+<rect class="cell on" x="506" y="96" width="28" height="28"/>
+<rect class="cell on" x="534" y="96" width="28" height="28"/>
+<rect class="cell" x="562" y="96" width="28" height="28"/>
+<rect class="cell" x="590" y="96" width="28" height="28"/>
+<rect class="cell" x="618" y="96" width="28" height="28"/>
+<rect class="cell" x="450" y="124" width="28" height="28"/>
+<rect class="cell" x="478" y="124" width="28" height="28"/>
+<rect class="cell on" x="506" y="124" width="28" height="28"/>
+<rect class="cell on" x="534" y="124" width="28" height="28"/>
+<rect class="cell on" x="562" y="124" width="28" height="28"/>
+<rect class="cell" x="590" y="124" width="28" height="28"/>
+<rect class="cell" x="618" y="124" width="28" height="28"/>
+<rect class="cell" x="450" y="152" width="28" height="28"/>
+<rect class="cell" x="478" y="152" width="28" height="28"/>
+<rect class="cell" x="506" y="152" width="28" height="28"/>
+<rect class="cell on" x="534" y="152" width="28" height="28"/>
+<rect class="cell on" x="562" y="152" width="28" height="28"/>
+<rect class="cell on" x="590" y="152" width="28" height="28"/>
+<rect class="cell" x="618" y="152" width="28" height="28"/>
+<rect class="cell" x="450" y="180" width="28" height="28"/>
+<rect class="cell" x="478" y="180" width="28" height="28"/>
+<rect class="cell" x="506" y="180" width="28" height="28"/>
+<rect class="cell" x="534" y="180" width="28" height="28"/>
+<rect class="cell on" x="562" y="180" width="28" height="28"/>
+<rect class="cell on" x="590" y="180" width="28" height="28"/>
+<rect class="cell on" x="618" y="180" width="28" height="28"/>
+<rect class="cell lc" x="450" y="208" width="28" height="28"/>
+<rect class="cell" x="478" y="208" width="28" height="28"/>
+<rect class="cell" x="506" y="208" width="28" height="28"/>
+<rect class="cell" x="534" y="208" width="28" height="28"/>
+<rect class="cell" x="562" y="208" width="28" height="28"/>
+<rect class="cell on" x="590" y="208" width="28" height="28"/>
+<rect class="cell on" x="618" y="208" width="28" height="28"/>
+          <text class="tx" x="548" y="28" text-anchor="middle">H is sparse</text>
+          <text class="tx s t" x="450" y="250">band = odometry</text>
+          <text class="tx s o" x="606" y="250">■ = loop</text>
+        </svg>
+      </figure>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">Why is it fast?</div>
+    <div class="note">
+      <p>Each edge touches only <b>2 poses</b>, so H is mostly zeros: a diagonal band from odometry plus a few off-diagonal blocks from loop closures. <mark>Sparse Cholesky</mark> solves thousands of poses in milliseconds. Libraries: g2o, Ceres, GTSAM.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">Gauge freedom?</div>
+    <div class="note">
+      <p>All edges are <u>relative</u>, so the whole graph could slide or spin and F wouldn't change. H is then singular. <b>Fix x₀</b> (anchor the first pose) and it's solvable.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">Gauss-Newton vs Levenberg-Marquardt?</div>
+    <div class="note">
+      <span class="eq">(H + λI) Δx = −b</span>
+      <p><b>LM</b> adds damping λ. Big λ gives small, careful steps (like gradient descent); small λ behaves like Gauss-Newton. λ adapts: if a step makes F worse, raise λ and try again.</p>
+      <div class="box warn"><span class="lab">Classic bug</span>Wrap angle errors into [−π, π]. Otherwise 359° vs 1° looks like a 358° error.</div>
+    </div>
+  </div>
+
+  <div class="summary">
+    <span class="lab">Summary</span>
+    <p>Linearise, solve the sparse system H Δx = −b, update, repeat. Anchor the first pose and wrap the angles.</p>
+  </div>
+</section>
+
+<!-- ═════════ SHEET 6 ═════════ -->
+<section class="sheet">
+  <div class="tb">
+    <div><span class="k">Subject</span><span class="v">SLAM</span></div>
+    <div><span class="k">Topic</span><span class="v topic">Loop detection &amp; robust kernels</span></div>
+    <div><span class="k">Date</span><span class="v">28.10.26</span></div>
+    <div><span class="k">Sheet</span><span class="v">6 / 7</span></div>
+  </div>
+
+  <div class="row">
+    <div class="cue">How do we recognise a place?</div>
+    <div class="note">
+      <ul class="d">
+        <li><b>Camera, bag of words</b>: cluster descriptors into a "vocabulary" offline. Each image becomes a histogram of visual words. Compare histograms to find look-alike past frames (DBoW2, in ORB-SLAM).</li>
+        <li><b>2D LiDAR</b>: match the current scan against old submaps near the current estimate.</li>
+        <li><b>3D LiDAR</b>: global descriptors such as <i>Scan Context</i>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">Should we trust a match right away?</div>
+    <div class="note">
+      <p>No. Before adding the edge, check:</p>
+      <ol>
+        <li><b>Geometry</b>: RANSAC / scan-match score must be good.</li>
+        <li><b>Consistency</b>: several frames in a row agree.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">What if a bad edge gets through anyway?</div>
+    <div class="note">
+      <p>With plain squared error, one wrong edge with error 10 pulls <mark>100× harder</mark> than an edge with error 1. One bad loop closure can wreck the whole map. <b>Robust kernels</b> cap that pull:</p>
+      <figure>
+        <svg viewBox="0 0 700 260" role="img" aria-label="Cost against error: squared cost shoots up, Huber grows linearly after a threshold, Cauchy flattens out, so large outlier errors have limited pull.">
+          <path class="ln p thin" d="M60 222 L 650 222"/>
+          <path class="ln p thin" d="M350 228 L 350 30"/>
+          <path class="ln p dash" d="M78.0 54.0 L81.4 58.2 L84.8 62.3 L88.2 66.4 L91.6 70.4 L95.0 74.3 L98.4 78.3 L101.8 82.1 L105.2 85.9 L108.6 89.7 L112.0 93.4 L115.4 97.0 L118.8 100.6 L122.2 104.2 L125.6 107.7 L129.0 111.1 L132.4 114.5 L135.8 117.8 L139.2 121.1 L142.6 124.3 L146.0 127.5 L149.4 130.6 L152.8 133.7 L156.2 136.7 L159.6 139.7 L163.0 142.6 L166.4 145.5 L169.8 148.3 L173.2 151.0 L176.6 153.7 L180.0 156.4 L183.4 159.0 L186.8 161.5 L190.2 164.0 L193.6 166.5 L197.0 168.8 L200.4 171.2 L203.8 173.5 L207.2 175.7 L210.6 177.9 L214.0 180.0 L217.4 182.1 L220.8 184.1 L224.2 186.1 L227.6 188.0 L231.0 189.8 L234.4 191.7 L237.8 193.4 L241.2 195.1 L244.6 196.8 L248.0 198.4 L251.4 199.9 L254.8 201.4 L258.2 202.9 L261.6 204.3 L265.0 205.6 L268.4 206.9 L271.8 208.1 L275.2 209.3 L278.6 210.4 L282.0 211.5 L285.4 212.5 L288.8 213.5 L292.2 214.4 L295.6 215.3 L299.0 216.1 L302.4 216.9 L305.8 217.6 L309.2 218.2 L312.6 218.8 L316.0 219.4 L319.4 219.9 L322.8 220.3 L326.2 220.7 L329.6 221.1 L333.0 221.3 L336.4 221.6 L339.8 221.8 L343.2 221.9 L346.6 222.0 L350.0 222.0 L353.4 222.0 L356.8 221.9 L360.2 221.8 L363.6 221.6 L367.0 221.3 L370.4 221.1 L373.8 220.7 L377.2 220.3 L380.6 219.9 L384.0 219.4 L387.4 218.8 L390.8 218.2 L394.2 217.6 L397.6 216.9 L401.0 216.1 L404.4 215.3 L407.8 214.4 L411.2 213.5 L414.6 212.5 L418.0 211.5 L421.4 210.4 L424.8 209.3 L428.2 208.1 L431.6 206.9 L435.0 205.6 L438.4 204.3 L441.8 202.9 L445.2 201.4 L448.6 199.9 L452.0 198.4 L455.4 196.8 L458.8 195.1 L462.2 193.4 L465.6 191.7 L469.0 189.8 L472.4 188.0 L475.8 186.1 L479.2 184.1 L482.6 182.1 L486.0 180.0 L489.4 177.9 L492.8 175.7 L496.2 173.5 L499.6 171.2 L503.0 168.8 L506.4 166.5 L509.8 164.0 L513.2 161.5 L516.6 159.0 L520.0 156.4 L523.4 153.7 L526.8 151.0 L530.2 148.3 L533.6 145.5 L537.0 142.6 L540.4 139.7 L543.8 136.7 L547.2 133.7 L550.6 130.6 L554.0 127.5 L557.4 124.3 L560.8 121.1 L564.2 117.8 L567.6 114.5 L571.0 111.1 L574.4 107.7 L577.8 104.2 L581.2 100.6 L584.6 97.0 L588.0 93.4 L591.4 89.7 L594.8 85.9 L598.2 82.1 L601.6 78.3 L605.0 74.3 L608.4 70.4 L611.8 66.4 L615.2 62.3 L618.6 58.2 L622.0 54.0"/>
+<path class="ln t" d="M78.0 148.5 L81.4 149.6 L84.8 150.6 L88.2 151.6 L91.6 152.7 L95.0 153.8 L98.4 154.8 L101.8 155.9 L105.2 156.9 L108.6 157.9 L112.0 159.0 L115.4 160.1 L118.8 161.1 L122.2 162.2 L125.6 163.2 L129.0 164.2 L132.4 165.3 L135.8 166.3 L139.2 167.4 L142.6 168.4 L146.0 169.5 L149.4 170.6 L152.8 171.6 L156.2 172.7 L159.6 173.7 L163.0 174.8 L166.4 175.8 L169.8 176.8 L173.2 177.9 L176.6 178.9 L180.0 180.0 L183.4 181.1 L186.8 182.1 L190.2 183.2 L193.6 184.2 L197.0 185.2 L200.4 186.3 L203.8 187.3 L207.2 188.4 L210.6 189.4 L214.0 190.5 L217.4 191.6 L220.8 192.6 L224.2 193.7 L227.6 194.7 L231.0 195.8 L234.4 196.8 L237.8 197.8 L241.2 198.9 L244.6 199.9 L248.0 201.0 L251.4 202.1 L254.8 203.1 L258.2 204.2 L261.6 205.2 L265.0 206.2 L268.4 207.3 L271.8 208.3 L275.2 209.4 L278.6 210.4 L282.0 211.5 L285.4 212.5 L288.8 213.5 L292.2 214.4 L295.6 215.3 L299.0 216.1 L302.4 216.9 L305.8 217.6 L309.2 218.2 L312.6 218.8 L316.0 219.4 L319.4 219.9 L322.8 220.3 L326.2 220.7 L329.6 221.1 L333.0 221.3 L336.4 221.6 L339.8 221.8 L343.2 221.9 L346.6 222.0 L350.0 222.0 L353.4 222.0 L356.8 221.9 L360.2 221.8 L363.6 221.6 L367.0 221.3 L370.4 221.1 L373.8 220.7 L377.2 220.3 L380.6 219.9 L384.0 219.4 L387.4 218.8 L390.8 218.2 L394.2 217.6 L397.6 216.9 L401.0 216.1 L404.4 215.3 L407.8 214.4 L411.2 213.5 L414.6 212.5 L418.0 211.5 L421.4 210.4 L424.8 209.4 L428.2 208.3 L431.6 207.3 L435.0 206.2 L438.4 205.2 L441.8 204.2 L445.2 203.1 L448.6 202.1 L452.0 201.0 L455.4 199.9 L458.8 198.9 L462.2 197.8 L465.6 196.8 L469.0 195.8 L472.4 194.7 L475.8 193.7 L479.2 192.6 L482.6 191.6 L486.0 190.5 L489.4 189.4 L492.8 188.4 L496.2 187.3 L499.6 186.3 L503.0 185.2 L506.4 184.2 L509.8 183.2 L513.2 182.1 L516.6 181.1 L520.0 180.0 L523.4 178.9 L526.8 177.9 L530.2 176.8 L533.6 175.8 L537.0 174.8 L540.4 173.7 L543.8 172.7 L547.2 171.6 L550.6 170.6 L554.0 169.5 L557.4 168.4 L560.8 167.4 L564.2 166.3 L567.6 165.3 L571.0 164.2 L574.4 163.2 L577.8 162.2 L581.2 161.1 L584.6 160.1 L588.0 159.0 L591.4 157.9 L594.8 156.9 L598.2 155.9 L601.6 154.8 L605.0 153.8 L608.4 152.7 L611.8 151.6 L615.2 150.6 L618.6 149.6 L622.0 148.5"/>
+<path class="ln o" d="M78.0 192.3 L81.4 192.5 L84.8 192.8 L88.2 193.0 L91.6 193.3 L95.0 193.5 L98.4 193.8 L101.8 194.1 L105.2 194.3 L108.6 194.6 L112.0 194.9 L115.4 195.1 L118.8 195.4 L122.2 195.7 L125.6 196.0 L129.0 196.3 L132.4 196.6 L135.8 196.9 L139.2 197.2 L142.6 197.5 L146.0 197.8 L149.4 198.1 L152.8 198.5 L156.2 198.8 L159.6 199.1 L163.0 199.5 L166.4 199.8 L169.8 200.1 L173.2 200.5 L176.6 200.8 L180.0 201.2 L183.4 201.6 L186.8 201.9 L190.2 202.3 L193.6 202.7 L197.0 203.1 L200.4 203.5 L203.8 203.9 L207.2 204.3 L210.6 204.7 L214.0 205.1 L217.4 205.5 L220.8 206.0 L224.2 206.4 L227.6 206.8 L231.0 207.3 L234.4 207.7 L237.8 208.2 L241.2 208.7 L244.6 209.1 L248.0 209.6 L251.4 210.1 L254.8 210.6 L258.2 211.1 L261.6 211.6 L265.0 212.1 L268.4 212.6 L271.8 213.2 L275.2 213.7 L278.6 214.2 L282.0 214.7 L285.4 215.2 L288.8 215.8 L292.2 216.3 L295.6 216.8 L299.0 217.3 L302.4 217.8 L305.8 218.3 L309.2 218.8 L312.6 219.2 L316.0 219.7 L319.4 220.1 L322.8 220.4 L326.2 220.8 L329.6 221.1 L333.0 221.4 L336.4 221.6 L339.8 221.8 L343.2 221.9 L346.6 222.0 L350.0 222.0 L353.4 222.0 L356.8 221.9 L360.2 221.8 L363.6 221.6 L367.0 221.4 L370.4 221.1 L373.8 220.8 L377.2 220.4 L380.6 220.1 L384.0 219.7 L387.4 219.2 L390.8 218.8 L394.2 218.3 L397.6 217.8 L401.0 217.3 L404.4 216.8 L407.8 216.3 L411.2 215.8 L414.6 215.2 L418.0 214.7 L421.4 214.2 L424.8 213.7 L428.2 213.2 L431.6 212.6 L435.0 212.1 L438.4 211.6 L441.8 211.1 L445.2 210.6 L448.6 210.1 L452.0 209.6 L455.4 209.1 L458.8 208.7 L462.2 208.2 L465.6 207.7 L469.0 207.3 L472.4 206.8 L475.8 206.4 L479.2 206.0 L482.6 205.5 L486.0 205.1 L489.4 204.7 L492.8 204.3 L496.2 203.9 L499.6 203.5 L503.0 203.1 L506.4 202.7 L509.8 202.3 L513.2 201.9 L516.6 201.6 L520.0 201.2 L523.4 200.8 L526.8 200.5 L530.2 200.1 L533.6 199.8 L537.0 199.5 L540.4 199.1 L543.8 198.8 L547.2 198.5 L550.6 198.1 L554.0 197.8 L557.4 197.5 L560.8 197.2 L564.2 196.9 L567.6 196.6 L571.0 196.3 L574.4 196.0 L577.8 195.7 L581.2 195.4 L584.6 195.1 L588.0 194.9 L591.4 194.6 L594.8 194.3 L598.2 194.1 L601.6 193.8 L605.0 193.5 L608.4 193.3 L611.8 193.0 L615.2 192.8 L618.6 192.5 L622.0 192.3"/>
+          <text class="tx s" x="362" y="246">error e →</text>
+          <text class="tx s p" x="358" y="38">cost</text>
+          
+          
+          
+          <circle class="dot o" cx="622" cy="192" r="6"/>
+          <path class="ln p dash" d="M420 40 L 456 40"/><text class="tx s p" x="464" y="46">squared (e²)</text>
+          <path class="ln t" d="M420 68 L 456 68"/><text class="tx s t" x="464" y="74">Huber (linear)</text>
+          <path class="ln o" d="M420 96 L 456 96"/><text class="tx s o" x="464" y="102">Cauchy (flattens)</text>
+          <text class="tx s r" x="640" y="246" text-anchor="end">↑ outlier: less pull</text>
+        </svg>
+      </figure>
+      <p class="soft">Stronger options: <b>switchable constraints</b> or <b>DCS</b>, which let the optimiser turn a bad edge's weight down to almost zero.</p>
+    </div>
+  </div>
+
+  <div class="summary">
+    <span class="lab">Summary</span>
+    <p>Recognise places with BoW or submap matching, check them geometrically and over time, and wrap the edges in robust kernels to protect against mistakes.</p>
+  </div>
+</section>
+
+<!-- ═════════ SHEET 7 ═════════ -->
+<section class="sheet">
+  <div class="tb">
+    <div><span class="k">Subject</span><span class="v">SLAM</span></div>
+    <div><span class="k">Topic</span><span class="v topic">Is my SLAM any good?</span></div>
+    <div><span class="k">Date</span><span class="v">28.10.26</span></div>
+    <div><span class="k">Sheet</span><span class="v">7 / 7</span></div>
+  </div>
+
+  <div class="row">
+    <div class="cue">What do we compare against?</div>
+    <div class="note">
+      <p><b>Ground truth</b>: motion capture, RTK-GPS, or a benchmark dataset: <span class="t">TUM RGB-D</span> (indoor RGB-D), <span class="t">KITTI</span> (car, LiDAR + stereo), <span class="t">EuRoC</span> (drone, stereo + IMU).</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">ATE vs RPE?</div>
+    <div class="note">
+      <figure>
+        <svg viewBox="0 0 700 250" role="img" aria-label="Ground truth path and estimated path, with red error segments between matching points that get longer over time.">
+          <path class="ln p dash" d="M50.0 150.0 L64.0 142.3 L78.0 134.7 L92.0 127.3 L106.0 120.2 L120.0 113.4 L134.0 107.1 L148.0 101.3 L162.0 96.1 L176.0 91.5 L190.0 87.6 L204.0 84.5 L218.0 82.2 L232.0 80.7 L246.0 80.0 L260.0 80.2 L274.0 81.2 L288.0 83.1 L302.0 85.8 L316.0 89.2 L330.0 93.4 L344.0 98.2 L358.0 103.7 L372.0 109.7 L386.0 116.3 L400.0 123.2 L414.0 130.5 L428.0 138.0 L442.0 145.6 L456.0 153.3 L470.0 161.0 L484.0 168.5 L498.0 175.8 L512.0 182.8 L526.0 189.3 L540.0 195.5 L554.0 201.0 L568.0 206.0 L582.0 210.3 L596.0 213.8 L610.0 216.6"/>
+          <path class="ln o" d="M50.0 150.0 L64.0 142.3 L78.0 134.8 L92.1 127.6 L106.1 120.7 L120.2 114.1 L134.3 108.1 L148.4 102.7 L162.5 97.9 L176.6 93.8 L190.7 90.5 L204.9 88.0 L219.0 86.3 L233.2 85.6 L247.4 85.7 L261.6 86.7 L275.8 88.6 L290.1 91.4 L304.3 95.1 L318.6 99.6 L332.9 104.9 L347.2 110.9 L361.5 117.6 L375.8 125.0 L390.1 132.8 L404.5 141.2 L418.9 149.9 L433.2 158.9 L447.6 168.1 L462.0 177.5 L476.5 186.8 L490.9 196.1 L505.4 205.2 L519.8 214.1 L534.3 222.6 L548.8 230.7 L563.3 238.3 L577.8 245.3 L592.4 251.8 L606.9 257.5 L621.5 262.6"/>
+          <path class="ln r thin" d="M106.0 120.2 L106.1 120.7"/>
+<path class="ln r thin" d="M162.0 96.1 L162.5 97.9"/>
+<path class="ln r thin" d="M218.0 82.2 L219.0 86.3"/>
+<path class="ln r thin" d="M274.0 81.2 L275.8 88.6"/>
+<path class="ln r thin" d="M330.0 93.4 L332.9 104.9"/>
+<path class="ln r thin" d="M386.0 116.3 L390.1 132.8"/>
+<path class="ln r thin" d="M442.0 145.6 L447.6 168.1"/>
+<path class="ln r thin" d="M498.0 175.8 L505.4 205.2"/>
+<path class="ln r thin" d="M554.0 201.0 L563.3 238.3"/>
+<path class="ln r thin" d="M610.0 216.6 L621.5 262.6"/>
+          <text class="tx s p" x="70" y="62">ground truth</text>
+          <text class="tx s o" x="470" y="236">estimate</text>
+          <text class="tx s r" x="560" y="140">errors</text>
+        </svg>
+      </figure>
+      <ul class="d">
+        <li><b>ATE</b> (absolute trajectory error): align the two paths, then take the RMSE of the red lines. Tells you about <u>global</u> consistency.</li>
+        <li><b>RPE</b> (relative pose error): error in the motion over a fixed step, e.g. per 1 m. Tells you about <u>drift</u>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">Tool to compute them?</div>
+    <div class="note">
+<div class="code"><span class="c"># pip install evo</span>
+evo_ape tum groundtruth.txt estimate.txt -va --plot
+evo_rpe tum groundtruth.txt estimate.txt --delta 1 --delta_unit m</div>
+      <p class="soft">-a aligns the paths first. Formats: tum, kitti, euroc, bag.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">No ground truth on my robot?</div>
+    <div class="note">
+      <ul class="d">
+        <li>Tape a start mark. Drive a loop and stop on the mark. How far off is the reported pose?</li>
+        <li>Measure a real corridor with a tape. Compare it with the length in the map.</li>
+        <li>Look for doubled or blurry walls. Sharp walls usually mean good scan matching.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cue">Coming up in ch. 3</div>
+    <div class="note">
+      <div class="box"><span class="lab">Next</span>Using the map: localising in a saved map with <b>AMCL</b>, costmaps, and path planning with <b>Nav2</b>.</div>
+    </div>
+  </div>
+
+  <div class="summary">
+    <span class="lab">Summary</span>
+    <p>ATE measures overall accuracy and RPE measures drift. Use evo with a benchmark dataset, or tape-and-loop tests on a real robot.</p>
+  </div>
+</section>
+
+</main>
+</body>
+</html>
