@@ -67,6 +67,7 @@ The R2 uses **Ackermann steering**, like a car: the rear wheels drive and the fr
 | `phase1_lidar/` | Phase 1: talking to the LiDAR directly over serial, no driver, no ROS |
 | `docs/images/` | Plots and pictures referenced from this README |
 | `docs/` | Raw data captured during experiments |
+| `notes/` | Hand-drawn-style study notes (Chapter 0: ROS 2 basics, Chapter 1: SLAM overview, Chapter 2: inside SLAM). See [`notes/README.md`](notes/README.md) |
 
 ## Software environment
 

@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>ROS 2 Chapter 0 Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Gaegu:wght@400;700&display=swap">
+<style>
+/* Layout: dot-grid journal spreads, each page tagged with a washi-tape tab; colour code is mint = node, pink = topic, lavender = service/action, yellow = "remember". */
+:root {
+  --desk:  #e4e2ea;
+  --paper: #fcfcfa;
+  --dots:  #c9c8d4;
+  --ink:   #24242c;
+  --soft:  #6f6e7c;
+  --blue:  #2450c4;
+  --red:   #cf3434;
+  --mint:  rgba(96, 214, 168, .45);
+  --pink:  rgba(255, 128, 176, .38);
+  --lav:   rgba(160, 140, 255, .36);
+  --yel:   rgba(255, 222, 70, .55);
+  --tape1: #9fd8c6; --tape2: #f2b6cc; --tape3: #c4b8f4;
+  --tapeink: #24242c;
+  --shadow: rgba(40, 36, 60, .15);
+  --head: "Gochi Hand", "Segoe Print", "Comic Sans MS", cursive;
+  --hand: "Gaegu", "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --desk: #111116; --paper: #1d1d24; --dots: #3a3a46; --ink: #ecebf3; --soft: #9c9bab;
+    --blue: #8fb0ff; --red: #ff8a84;
+    --mint: rgba(96, 214, 168, .28); --pink: rgba(255, 128, 176, .26); --lav: rgba(160, 140, 255, .3); --yel: rgba(255, 222, 70, .26);
+    --tape1: #3f6d61; --tape2: #74485a; --tape3: #554c80; --tapeink: #f3f2f8;
+    --shadow: rgba(0, 0, 0, .5); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --desk: #111116; --paper: #1d1d24; --dots: #3a3a46; --ink: #ecebf3; --soft: #9c9bab;
+  --blue: #8fb0ff; --red: #ff8a84;
+  --mint: rgba(96, 214, 168, .28); --pink: rgba(255, 128, 176, .26); --lav: rgba(160, 140, 255, .3); --yel: rgba(255, 222, 70, .26);
+  --tape1: #3f6d61; --tape2: #74485a; --tape3: #554c80; --tapeink: #f3f2f8;
+  --shadow: rgba(0, 0, 0, .5); color-scheme: dark;
+}
+
+body {
+  background: var(--desk); color: var(--ink);
+  font-family: var(--hand); font-size: 22px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+}
+.stack { max-width: 860px; margin: 0 auto; display: grid; gap: 52px; }
+
+.pg {
+  position: relative; min-width: 0;
+  background-color: var(--paper);
+  background-image: radial-gradient(circle, var(--dots) 1.3px, transparent 1.6px);
+  background-size: 22px 22px; background-position: 11px 11px;
+  border-radius: 4px 4px 10px 4px;
+  box-shadow: 0 1px 2px var(--shadow), 0 14px 30px var(--shadow);
+  padding: 64px 44px 40px;
+}
+.pg > * + * { margin-top: 16px; }
+
+.tab {
+  position: absolute; top: -14px; left: 34px;
+  font-family: var(--head); font-size: 20px; color: var(--tapeink);
+  padding: 4px 22px 3px; transform: rotate(-2deg);
+  background: repeating-linear-gradient(-45deg, var(--tape1) 0 10px, color-mix(in srgb, var(--tape1) 80%, var(--paper)) 10px 20px);
+  opacity: .95;
+}
+.pg:nth-child(3n+2) .tab { background: repeating-linear-gradient(-45deg, var(--tape2) 0 10px, color-mix(in srgb, var(--tape2) 80%, var(--paper)) 10px 20px); transform: rotate(1.5deg); }
+.pg:nth-child(3n) .tab   { background: repeating-linear-gradient(-45deg, var(--tape3) 0 10px, color-mix(in srgb, var(--tape3) 80%, var(--paper)) 10px 20px); transform: rotate(-1deg); }
+.num { position: absolute; bottom: 14px; right: 26px; font-family: var(--head); font-size: 20px; color: var(--soft); }
+
+h1 { font-family: var(--head); font-weight: 400; font-size: 70px; line-height: 1; margin: 0; text-wrap: balance; }
+h1 small { display: block; font-size: 26px; color: var(--blue); letter-spacing: .06em; margin-bottom: 6px; }
+h2 { font-family: var(--head); font-weight: 400; font-size: 40px; line-height: 1.1; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--head); font-weight: 400; font-size: 28px; line-height: 1.2; margin: 0; color: var(--blue); }
+p, ul, ol { margin: 0; }
+ul, ol { padding-left: 28px; }
+ul.b { list-style: none; padding-left: 26px; }
+ul.b > li { position: relative; }
+ul.b > li::before { content: "•"; position: absolute; left: -20px; color: var(--blue); font-weight: 700; }
+ol li::marker { font-family: var(--head); color: var(--blue); }
+b { font-weight: 700; }
+
+.hm { background: linear-gradient(100deg, transparent 1%, var(--mint) 4%, var(--mint) 96%, transparent 99%); padding: 0 4px; }
+.hp { background: linear-gradient(100deg, transparent 1%, var(--pink) 4%, var(--pink) 96%, transparent 99%); padding: 0 4px; }
+.hl { background: linear-gradient(100deg, transparent 1%, var(--lav) 4%, var(--lav) 96%, transparent 99%); padding: 0 4px; }
+.hy { background: linear-gradient(100deg, transparent 1%, var(--yel) 4%, var(--yel) 96%, transparent 99%); padding: 0 4px; }
+.red { color: var(--red); } .blue { color: var(--blue); } .soft { color: var(--soft); }
+code, .c { font-family: var(--mono); font-size: .72em; background: color-mix(in srgb, var(--ink) 7%, transparent); padding: 1px 5px; border-radius: 4px; }
+
+.key {
+  display: flex; flex-wrap: wrap; gap: 10px 22px; font-size: 19px;
+}
+.key span { padding: 0 8px; }
+
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; }
+.cols > div { min-width: 0; }
+.cols > div > * + * { margin-top: 10px; }
+
+.note {
+  border: 2.5px solid var(--ink); padding: 12px 18px 14px;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+}
+.note.r { border-color: var(--red); }
+.note .lab { font-family: var(--head); font-size: 24px; display: block; }
+.note.r .lab { color: var(--red); }
+.yel { background: var(--yel); padding: 14px 20px; transform: rotate(-1deg); max-width: 520px; box-shadow: 2px 5px 12px var(--shadow); }
+.yel .lab { font-family: var(--head); font-size: 24px; display: block; }
+
+.tw { overflow-x: auto; }
+table.t { border-collapse: collapse; font-size: 19px; width: 100%; }
+table.t th { font-family: var(--head); font-weight: 400; font-size: 22px; text-align: left; padding: 4px 12px 4px 0; border-bottom: 2.5px solid var(--ink); }
+table.t td { padding: 5px 12px 5px 0; border-bottom: 1.5px dashed var(--dots); vertical-align: top; }
+table.t td:first-child { white-space: nowrap; }
+
+.qos td, .qos th { text-align: center !important; }
+.qos td:first-child { text-align: left !important; }
+.ok { color: var(--blue); font-size: 26px; font-weight: 700; }
+.no { color: var(--red); font-size: 26px; font-weight: 700; }
+
+.code {
+  font-family: var(--mono); font-size: 14.5px; line-height: 1.6; white-space: pre; overflow-x: auto;
+  background: var(--paper); border: 1.5px solid var(--soft); border-radius: 6px; padding: 14px 16px; color: var(--ink);
+}
+.code .cm { color: var(--soft); }
+.code .kw { color: var(--blue); }
+
+figure { margin: 0; overflow-x: auto; }
+figure svg { display: block; width: 100%; height: auto; min-width: 500px; }
+figcaption { text-align: center; color: var(--soft); font-size: 19px; }
+.mini svg { min-width: 0; }
+.quad { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px 26px; }
+.quad > div { min-width: 0; }
+.quad h3 { font-size: 26px; }
+.quad p { font-size: 19px; }
+
+.ln { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.ln.r { stroke: var(--red); } .ln.b { stroke: var(--blue); } .ln.s { stroke: var(--soft); } .ln.d { stroke-dasharray: 6 6; }
+.node  { fill: var(--mint); stroke: var(--ink); stroke-width: 2.4; }
+.topic { fill: var(--pink); stroke: var(--ink); stroke-width: 2.4; }
+.srv   { fill: var(--lav); stroke: var(--ink); stroke-width: 2.4; }
+.par   { fill: var(--yel); stroke: var(--ink); stroke-width: 2; }
+.tx { font-family: var(--hand); font-weight: 700; font-size: 21px; fill: var(--ink); }
+.tx.s { font-size: 18px; font-weight: 400; }
+.tx.r { fill: var(--red); } .tx.b { fill: var(--blue); } .tx.so { fill: var(--soft); }
+.tx.mo { font-family: var(--mono); font-size: 15px; font-weight: 600; }
+.ah { fill: var(--ink); } .ah.r { fill: var(--red); } .ah.b { fill: var(--blue); }
+.wob { filter: url(#wob); }
+
+.flow { list-style: none; padding: 0; display: grid; gap: 12px; counter-reset: s; }
+.flow li { counter-increment: s; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; align-items: start; }
+.flow li::before {
+  content: counter(s); font-family: var(--head); font-size: 24px; text-align: center; line-height: 40px;
+  width: 40px; height: 40px; border: 2.5px solid var(--blue); border-radius: 50% 46% 52% 48%; color: var(--blue);
+}
+.flow .q { font-weight: 700; }
+.flow .fix { color: var(--soft); font-size: 19px; display: block; }
+
+@media (max-width: 680px) {
+  body { font-size: 20px; }
+  .pg { padding: 56px 18px 40px; }
+  .tab { left: 16px; }
+  h1 { font-size: 50px; }
+  h2 { font-size: 32px; }
+  .cols, .quad { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="wob" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="5"/>
+      <feDisplacementMap in="SourceGraphic" scale="2.6"/>
+    </filter>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 L3 5 Z"/></marker>
+    <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah r" d="M0 0 L10 5 L0 10 L3 5 Z"/></marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="ah b" d="M0 0 L10 5 L0 10 L3 5 Z"/></marker>
+  </defs>
+</svg>
+
+<main class="stack">
+
+<!-- ═══ PAGE 1 ═══ -->
+<section class="pg">
+  <span class="tab">Ch. 0 · the big picture</span>
+  <h1><small>CHAPTER 0, BEFORE SLAM</small>ROS 2 basics</h1>
+  <p>A ROS 2 robot isn't one big program. It's lots of <span class="hm">small programs (nodes)</span> that pass <b>messages</b> to each other over <span class="hp">named channels (topics)</span>.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 320" role="img" aria-label="Node graph of a SLAM robot: lidar_driver publishes /scan and base_controller publishes /odom, both read by slam_toolbox, which publishes /map read by rviz2; teleop publishes /cmd_vel read by base_controller.">
+      <g class="wob">
+        <ellipse class="node" cx="104" cy="54"  rx="92" ry="32"/>
+        <ellipse class="node" cx="104" cy="164" rx="98" ry="32"/>
+        <ellipse class="node" cx="104" cy="276" rx="80" ry="32"/>
+        <rect class="topic" x="248" y="34"  width="96" height="40" rx="3"/>
+        <rect class="topic" x="248" y="144" width="96" height="40" rx="3"/>
+        <rect class="topic" x="248" y="256" width="110" height="40" rx="3"/>
+        <ellipse class="node" cx="470" cy="108" rx="84" ry="32"/>
+        <rect class="topic" x="590" y="34" width="84" height="40" rx="3"/>
+        <ellipse class="node" cx="632" cy="206" rx="62" ry="30"/>
+        <path class="ln" d="M196 54 L 244 54" marker-end="url(#a)"/>
+        <path class="ln" d="M202 164 L 244 164" marker-end="url(#a)"/>
+        <path class="ln" d="M184 276 L 244 276" marker-end="url(#a)"/>
+        <path class="ln" d="M346 56 C 380 60, 392 80, 402 92" marker-end="url(#a)"/>
+        <path class="ln" d="M346 162 C 380 156, 392 138, 402 126" marker-end="url(#a)"/>
+        <path class="ln" d="M534 88 C 556 70, 566 60, 586 56" marker-end="url(#a)"/>
+        <path class="ln" d="M632 76 L 632 172" marker-end="url(#a)"/>
+        <path class="ln" d="M360 276 C 420 276, 420 220, 300 214 C 230 210, 210 200, 190 186" marker-end="url(#a)"/>
+      </g>
+      <text class="tx" x="104" y="60"  text-anchor="middle">lidar_driver</text>
+      <text class="tx" x="104" y="170" text-anchor="middle">base_controller</text>
+      <text class="tx" x="104" y="282" text-anchor="middle">teleop</text>
+      <text class="tx" x="296" y="60"  text-anchor="middle">/scan</text>
+      <text class="tx" x="296" y="170" text-anchor="middle">/odom</text>
+      <text class="tx" x="303" y="282" text-anchor="middle">/cmd_vel</text>
+      <text class="tx" x="470" y="114" text-anchor="middle">slam_toolbox</text>
+      <text class="tx" x="632" y="60"  text-anchor="middle">/map</text>
+      <text class="tx" x="632" y="212" text-anchor="middle">rviz2</text>
+      <text class="tx s so" x="430" y="302">↖ commands go back to the motors</text>
+    </svg>
+  </figure>
+  <div class="key"><span class="hm">oval = node</span><span class="hp">box = topic</span><span>arrow = message flow</span></div>
+  <p class="soft">This is exactly how <code>rqt_graph</code> draws a running robot.</p>
+  <span class="num">0.1</span>
+</section>
+
+<!-- ═══ PAGE 2 ═══ -->
+<section class="pg">
+  <span class="tab">nodes &amp; topics</span>
+  <h2><span class="hm">Nodes</span></h2>
+  <ul class="b">
+    <li>One process (or part of one) doing <b>one job</b>: read the LiDAR, run SLAM, drive the motors, show RViz.</li>
+    <li>Each has a name, e.g. <code>/slam_toolbox</code>.</li>
+    <li>Written in Python (<code>rclpy</code>) or C++ (<code>rclcpp</code>).</li>
+    <li>Why split things up? If one node crashes the others keep going, and you can swap one (a different LiDAR driver) without touching the rest.</li>
+  </ul>
+
+  <h2><span class="hp">Topics</span></h2>
+  <p>A named stream of messages, like a <b>radio channel</b>. Nodes <b>publish</b> to it or <b>subscribe</b> to it.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 220" role="img" aria-label="One publisher, lidar_driver, sends to the /scan topic; three subscribers, slam_toolbox, rviz2 and obstacle_detector, all receive it.">
+      <g class="wob">
+        <ellipse class="node" cx="110" cy="110" rx="94" ry="32"/>
+        <rect class="topic" x="270" y="88" width="104" height="44" rx="3"/>
+        <ellipse class="node" cx="566" cy="36"  rx="96" ry="28"/>
+        <ellipse class="node" cx="566" cy="110" rx="70" ry="28"/>
+        <ellipse class="node" cx="566" cy="186" rx="124" ry="28"/>
+        <path class="ln" d="M206 110 L 266 110" marker-end="url(#a)"/>
+        <path class="ln" d="M376 100 C 410 60, 430 40, 466 38" marker-end="url(#a)"/>
+        <path class="ln" d="M376 110 L 492 110" marker-end="url(#a)"/>
+        <path class="ln" d="M376 120 C 410 160, 420 180, 440 184" marker-end="url(#a)"/>
+      </g>
+      <text class="tx" x="110" y="116" text-anchor="middle">lidar_driver</text>
+      <text class="tx" x="322" y="117" text-anchor="middle">/scan</text>
+      <text class="tx" x="566" y="42"  text-anchor="middle">slam_toolbox</text>
+      <text class="tx" x="566" y="116" text-anchor="middle">rviz2</text>
+      <text class="tx" x="566" y="192" text-anchor="middle">obstacle_detector</text>
+      <text class="tx s b" x="236" y="80" text-anchor="middle">publish</text>
+      <text class="tx s b" x="430" y="216" text-anchor="middle">subscribe</text>
+    </svg>
+  </figure>
+
+  <ul class="b">
+    <li><b>Many-to-many</b>: any number of publishers and subscribers on one topic.</li>
+    <li><b>Anonymous</b>: the publisher doesn't know who's listening, and doesn't care.</li>
+    <li><b>One-way, continuous</b>: no reply. Best for data that keeps flowing.</li>
+  </ul>
+
+  <h3>topics on a mobile robot</h3>
+  <div class="tw"><table class="t">
+    <tr><th>topic</th><th>message type</th><th>from → to</th></tr>
+    <tr><td><code>/scan</code></td><td>sensor_msgs/LaserScan</td><td>LiDAR driver → SLAM, Nav2, RViz</td></tr>
+    <tr><td><code>/odom</code></td><td>nav_msgs/Odometry</td><td>base controller → SLAM, Nav2</td></tr>
+    <tr><td><code>/cmd_vel</code></td><td>geometry_msgs/Twist</td><td>teleop, Nav2 → base controller</td></tr>
+    <tr><td><code>/map</code></td><td>nav_msgs/OccupancyGrid</td><td>slam_toolbox → Nav2, RViz</td></tr>
+    <tr><td><code>/tf</code></td><td>tf2_msgs/TFMessage</td><td>many nodes → everyone</td></tr>
+    <tr><td><code>/imu</code></td><td>sensor_msgs/Imu</td><td>IMU driver → EKF, SLAM</td></tr>
+  </table></div>
+  <span class="num">0.2</span>
+</section>
+
+<!-- ═══ PAGE 3 ═══ -->
+<section class="pg">
+  <span class="tab">messages &amp; QoS</span>
+  <h2>Messages</h2>
+  <div class="cols">
+    <div>
+      <p>Every topic carries exactly <b>one message type</b>: a fixed structure defined in a <code>.msg</code> file. Publisher and subscriber must agree on it.</p>
+      <p>Many messages start with a <span class="hy">header</span>: a <b>timestamp</b> (when) and a <b>frame_id</b> (which frame, e.g. <code>laser</code>). SLAM needs both, which links straight to the tf tree in ch. 1.</p>
+    </div>
+    <div>
+<div class="code"><span class="cm"># geometry_msgs/Twist</span>
+Vector3 linear   <span class="cm"># x = forward m/s</span>
+Vector3 angular  <span class="cm"># z = turn rad/s</span>
+
+<span class="cm"># see any type:</span>
+ros2 interface show \
+  geometry_msgs/msg/Twist</div>
+    </div>
+  </div>
+
+  <h2>QoS <span class="soft" style="font-size:24px">(quality of service)</span></h2>
+  <p>New in ROS 2, and the source of a lot of <span class="red">"connected, but nothing arrives"</span> bugs. Each publisher and subscriber chooses:</p>
+  <ul class="b">
+    <li><b>Reliability</b>: <code>RELIABLE</code> resends lost messages. <code>BEST_EFFORT</code> just drops them, which is fine for fast sensor data.</li>
+    <li><b>Durability</b>: <code>VOLATILE</code> = late joiners only get new messages. <code>TRANSIENT_LOCAL</code> = the last message is kept for late joiners. <code>/map</code> uses this, so RViz opened later still gets the map.</li>
+    <li><b>History / depth</b>: how many messages to queue.</li>
+  </ul>
+
+  <h3>does it connect?</h3>
+  <div class="tw"><table class="t qos">
+    <tr><th>publisher ↓ · subscriber →</th><th>RELIABLE</th><th>BEST_EFFORT</th></tr>
+    <tr><td>RELIABLE</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+    <tr><td>BEST_EFFORT</td><td class="no">✗</td><td class="ok">✓</td></tr>
+  </table></div>
+
+  <div class="note r">
+    <span class="lab">The classic bug</span>
+    LiDAR publishes <code>BEST_EFFORT</code>, RViz subscribes <code>RELIABLE</code>, and you get no points and <u>no error</u>. Check with <code>ros2 topic info /scan -v</code>, then set RViz's reliability to Best Effort.
+  </div>
+  <p class="soft">Same idea for durability: a <code>TRANSIENT_LOCAL</code> subscriber won't match a <code>VOLATILE</code> publisher.</p>
+  <span class="num">0.3</span>
+</section>
+
+<!-- ═══ PAGE 4 ═══ -->
+<section class="pg">
+  <span class="tab">4 ways to talk</span>
+  <h2>Topics aren't the only way</h2>
+
+  <div class="quad">
+    <div>
+      <h3><span class="hp">Topic</span></h3>
+      <figure class="mini"><svg viewBox="0 0 320 120" role="img" aria-label="A publishes to a topic, B and C receive.">
+        <g class="wob">
+          <ellipse class="node" cx="40" cy="60" rx="30" ry="22"/>
+          <rect class="topic" x="120" y="42" width="70" height="36" rx="3"/>
+          <ellipse class="node" cx="280" cy="30" rx="30" ry="20"/>
+          <ellipse class="node" cx="280" cy="92" rx="30" ry="20"/>
+          <path class="ln" d="M72 60 L 116 60" marker-end="url(#a)"/>
+          <path class="ln" d="M192 54 L 246 34" marker-end="url(#a)"/>
+          <path class="ln" d="M192 66 L 246 88" marker-end="url(#a)"/>
+        </g>
+        <text class="tx s" x="40" y="66" text-anchor="middle">A</text>
+        <text class="tx s" x="155" y="66" text-anchor="middle">/x</text>
+        <text class="tx s" x="280" y="36" text-anchor="middle">B</text>
+        <text class="tx s" x="280" y="98" text-anchor="middle">C</text>
+      </svg></figure>
+      <p>Continuous stream, many listeners. <span class="soft">e.g. <code>/scan</code>, <code>/cmd_vel</code></span></p>
+    </div>
+    <div>
+      <h3><span class="hl">Service</span></h3>
+      <figure class="mini"><svg viewBox="0 0 320 120" role="img" aria-label="Client sends a request to a server and gets one response back.">
+        <g class="wob">
+          <ellipse class="node" cx="56" cy="60" rx="46" ry="24"/>
+          <ellipse class="srv"  cx="262" cy="60" rx="50" ry="24"/>
+          <path class="ln" d="M104 50 L 210 50" marker-end="url(#a)"/>
+          <path class="ln b" d="M210 72 L 104 72" marker-end="url(#ab)"/>
+        </g>
+        <text class="tx s" x="56" y="66" text-anchor="middle">client</text>
+        <text class="tx s" x="262" y="66" text-anchor="middle">server</text>
+        <text class="tx s" x="157" y="40" text-anchor="middle">request</text>
+        <text class="tx s b" x="157" y="98" text-anchor="middle">response</text>
+      </svg></figure>
+      <p>Ask once, get one answer. Quick calls. <span class="soft">e.g. save the map, reset odom</span></p>
+    </div>
+    <div>
+      <h3><span class="hl">Action</span></h3>
+      <figure class="mini"><svg viewBox="0 0 320 130" role="img" aria-label="Client sends a goal to a server, receives repeated feedback, then a final result; the goal can be cancelled.">
+        <g class="wob">
+          <ellipse class="node" cx="56" cy="64" rx="46" ry="24"/>
+          <ellipse class="srv"  cx="262" cy="64" rx="50" ry="24"/>
+          <path class="ln" d="M104 50 L 210 46" marker-end="url(#a)"/>
+          <path class="ln s d" d="M212 66 L 200 66 M114 66 L 106 66" marker-end="url(#a)"/>
+          <path class="ln b" d="M212 80 L 106 84" marker-end="url(#ab)"/>
+        </g>
+        <text class="tx s" x="56" y="70" text-anchor="middle">client</text>
+        <text class="tx s" x="262" y="70" text-anchor="middle">server</text>
+        <text class="tx s" x="157" y="36" text-anchor="middle">goal</text>
+        <text class="tx s so" x="157" y="72" text-anchor="middle">feedback</text>
+        <text class="tx s b" x="157" y="108" text-anchor="middle">result</text>
+      </svg></figure>
+      <p>Long task with progress updates; can be <b>cancelled</b>. <span class="soft">e.g. Nav2 <code>navigate_to_pose</code></span></p>
+    </div>
+    <div>
+      <h3><span class="hy">Parameter</span></h3>
+      <figure class="mini"><svg viewBox="0 0 320 120" role="img" aria-label="A node with a list of settings attached to it.">
+        <g class="wob">
+          <ellipse class="node" cx="74" cy="60" rx="64" ry="26"/>
+          <rect class="par" x="170" y="14" width="140" height="92" rx="4"/>
+          <path class="ln s" d="M140 60 L 168 60"/>
+        </g>
+        <text class="tx s" x="74" y="66" text-anchor="middle">slam_toolbox</text>
+        <text class="tx mo" x="180" y="42">resolution</text>
+        <text class="tx mo" x="180" y="64">  0.05</text>
+        <text class="tx mo" x="180" y="88">max_range 12</text>
+      </svg></figure>
+      <p>Settings that live on a node. Set in YAML or at launch. <span class="soft">e.g. map resolution</span></p>
+    </div>
+  </div>
+
+  <div class="yel">
+    <span class="lab">Rule of thumb</span>
+    Streaming data → <b>topic</b>. A quick question → <b>service</b>. "Go do this, keep me posted" → <b>action</b>. A config value → <b>parameter</b>.
+  </div>
+  <span class="num">0.4</span>
+</section>
+
+<!-- ═══ PAGE 5 ═══ -->
+<section class="pg">
+  <span class="tab">names · discovery · launch</span>
+  <h2>Names &amp; namespaces</h2>
+  <ul class="b">
+    <li><code>/scan</code> starts with <b>/</b>, so it's <b>absolute</b> and always means exactly <code>/scan</code>.</li>
+    <li><code>scan</code> has no slash, so it's <b>relative</b> and picks up the node's <b>namespace</b>: in namespace <code>robot1</code> it becomes <code>/robot1/scan</code>.</li>
+    <li>That's how two robots share a network without their topics colliding.</li>
+  </ul>
+
+  <h3>remapping = rename without touching code</h3>
+  <p>Your driver says <code>/lidar/scan</code> but SLAM wants <code>/scan</code>:</p>
+<div class="code">ros2 run my_driver lidar_node --ros-args -r /lidar/scan:=/scan</div>
+
+  <h2>How do nodes find each other?</h2>
+  <div class="cols">
+    <div>
+      <p>No central server. (ROS 1 needed <code>roscore</code>.) ROS 2 runs on <span class="hl">DDS</span>, and nodes <b>discover each other automatically</b> on the network.</p>
+    </div>
+    <div>
+      <p><code>ROS_DOMAIN_ID</code> splits robots into separate groups. Nodes only see others with the <span class="hy">same ID</span>.</p>
+    </div>
+  </div>
+  <div class="note">
+    <span class="lab">Laptop can't see the robot's topics?</span>
+    Same <code>ROS_DOMAIN_ID</code> on both? Same Wi-Fi? Firewall letting multicast through? (<code>ROS_LOCALHOST_ONLY=1</code>, or <code>ROS_AUTOMATIC_DISCOVERY_RANGE</code> on newer versions, keeps it to one machine.)
+  </div>
+
+  <h2>Launch files</h2>
+  <p>Starting 10 nodes by hand is painful. A <b>launch file</b> (Python, XML or YAML) starts them all together, with their parameters, remaps and namespaces:</p>
+<div class="code">ros2 launch slam_toolbox online_async_launch.py</div>
+  <span class="num">0.5</span>
+</section>
+
+<!-- ═══ PAGE 6 ═══ -->
+<section class="pg">
+  <span class="tab">first node + cheat sheet</span>
+  <h2>A tiny obstacle-avoider</h2>
+  <p>One node: <span class="hp">subscribes</span> to <code>/scan</code>, <span class="hp">publishes</span> to <code>/cmd_vel</code>.</p>
+<div class="code"><span class="kw">import</span> rclpy
+<span class="kw">from</span> rclpy.node <span class="kw">import</span> Node
+<span class="kw">from</span> rclpy.qos <span class="kw">import</span> qos_profile_sensor_data
+<span class="kw">from</span> geometry_msgs.msg <span class="kw">import</span> Twist
+<span class="kw">from</span> sensor_msgs.msg <span class="kw">import</span> LaserScan
+
+<span class="kw">class</span> Avoider(Node):
+    <span class="kw">def</span> __init__(self):
+        super().__init__(<span class="cm">'avoider'</span>)                       <span class="cm"># node name</span>
+        self.pub = self.create_publisher(Twist, <span class="cm">'/cmd_vel'</span>, 10)
+        self.create_subscription(LaserScan, <span class="cm">'/scan'</span>, self.on_scan,
+                                 qos_profile_sensor_data)   <span class="cm"># best-effort, matches LiDAR</span>
+
+    <span class="kw">def</span> on_scan(self, msg):                               <span class="cm"># runs on every scan</span>
+        mid = len(msg.ranges) // 2
+        ahead = min(msg.ranges[mid - 10 : mid + 10])
+        cmd = Twist()
+        cmd.linear.x  = 0.15 <span class="kw">if</span> ahead > 0.5 <span class="kw">else</span> 0.0
+        cmd.angular.z = 0.0  <span class="kw">if</span> ahead > 0.5 <span class="kw">else</span> 0.6
+        self.pub.publish(cmd)
+
+rclpy.init()
+rclpy.spin(Avoider())</div>
+  <p class="soft">⚠ Which index is "straight ahead" depends on how the LiDAR is mounted. Check <code>angle_min</code> and <code>angle_increment</code> first.</p>
+
+  <h2>Cheat sheet</h2>
+<div class="code">ros2 node list                      <span class="cm"># running nodes</span>
+ros2 node info /slam_toolbox        <span class="cm"># its pubs, subs, services, actions</span>
+ros2 topic list -t                  <span class="cm"># topics + types</span>
+ros2 topic echo /odom               <span class="cm"># print live messages</span>
+ros2 topic hz /scan                 <span class="cm"># publish rate</span>
+ros2 topic info /scan -v            <span class="cm"># who pubs/subs + QoS</span>
+ros2 interface show geometry_msgs/msg/Twist
+ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.1}}"
+rqt_graph                           <span class="cm"># draw the graph</span></div>
+  <span class="num">0.6</span>
+</section>
+
+<!-- ═══ PAGE 7 ═══ -->
+<section class="pg">
+  <span class="tab">when it doesn't work</span>
+  <h2>Debug, top to bottom</h2>
+  <ol class="flow">
+    <li><div><span class="q">Is the node running?</span><span class="fix"><code>ros2 node list</code>. If it's missing, check the terminal it crashed in.</span></div></li>
+    <li><div><span class="q">Is the topic there, with the exact name?</span><span class="fix"><code>ros2 topic list</code>. Look for typos, a missing <code>/</code>, or a namespace prefix.</span></div></li>
+    <li><div><span class="q">Is data actually flowing?</span><span class="fix"><code>ros2 topic hz /scan</code>. 0 Hz means look at the publisher.</span></div></li>
+    <li><div><span class="q">Does the QoS match?</span><span class="fix"><code>ros2 topic info /scan -v</code>. Best-effort into reliable = silence.</span></div></li>
+    <li><div><span class="q">Can the machines see each other?</span><span class="fix">Same <code>ROS_DOMAIN_ID</code>, same network, firewall open.</span></div></li>
+    <li><div><span class="q">Do time and frames line up?</span><span class="fix"><code>use_sim_time</code> right? Clocks synced between machines? tf tree complete? (<code>ros2 run tf2_tools view_frames</code>)</span></div></li>
+  </ol>
+
+  <div class="yel">
+    <span class="lab">Chapter 0 in one breath</span>
+    <b>Nodes</b> do one job each. They talk over <b>topics</b> (streams), <b>services</b> (ask/answer) and <b>actions</b> (long tasks), are configured with <b>parameters</b>, find each other automatically through DDS, and get started together by <b>launch files</b>.
+  </div>
+  <p class="soft">Next → Chapter 1: how SLAM uses <code>/scan</code>, <code>/odom</code> and <code>/tf</code> to build <code>/map</code>.</p>
+  <span class="num">0.7</span>
+</section>
+
+</main>
+</body>
+</html>
